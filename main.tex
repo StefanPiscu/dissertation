@@ -1,0 +1,55 @@
+\documentclass[12pt, a4paper, oneside]{book}
+
+\newif\ifdraft
+\drafttrue
+\input{setup}
+
+\addbibresource{refs.bib}
+
+\newcommand{\myTitle}{Superoptimizing LLVM IR to RISC-V}
+\newcommand{\myName}{Stefan-Constantin Piscu}
+\newcommand{\myBGN}{2707D}
+\newcommand{\myYear}{2026}
+\newcommand{\myDate}{\today}
+
+\begin{document}
+\pagenumbering{roman}
+
+\begin{titlepage}
+    \raggedleft \myName \par
+    \centering
+    \vspace*{4cm}
+    {\Huge \bfseries \myTitle \par}
+    \ifdraft
+    {\Huge \color{red} \bf DRAFT \par}
+    \fi
+    \vspace{2cm}
+    {\Large Computer Science Tripos Part II \par}
+    \vspace{1cm}
+    {\Large \myYear \par}
+\end{titlepage}
+
+
+\newpage
+\thispagestyle{plain}
+\section*{Declaration}
+I, the candidate for Part II of the Computer Science Tripos with Blind Grading Number \myBGN, hereby declare that this report and the work described in it are my own work, unaided except as may be specified below, and that the report does not contain material that has already been used to any substantial. In preparation of this report, I adhered to the Department of Computer Science and Technology AI Policy. [The project required the approved use of \textit{Insert AI Name if used} and such use is acknowledged in the text at the relevant sections.] I am content for my report to be made available to the students and staff of the University. 
+\vspace{1cm}
+\noindent Date: \myDate
+
+\stefan{Here's an example comment}
+\resolved[Stefan]{Here's an issue}{Here's a fix}
+\include{proforma}
+
+\tableofcontents
+
+\clearpage
+\pagenumbering{arabic}
+\include{chapters/intro/main}
+\include{chapters/prep/main}
+\include{chapters/impl/main}
+\include{chapters/eval/main}
+\include{chapters/conc/main}
+
+\printbibliography
+\end{document}
