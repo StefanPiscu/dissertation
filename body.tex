@@ -10,10 +10,14 @@ in order to work at different levels of abstraction. This allows high level
 optimizations to be applied on a high level view of the code, while letting low 
 level optimizations (like instruction selection) be handled close to the ISA. 
 
+\fehr{Maybe something like : MLIR is an extensible compilers that allows users to
+define custom IRs...}
 One framework for working with IRs is MLIR (Multi-Level Intermediate Representation)
 that has a collection of dialects that can be progressively lowered until assembly 
 level language is reached.
 
+\fehr{Maybe one sentence on why superoptimization is interesting? i.e. the work
+needed to optimize/lower IRs is quite large.}
 One technique of interest is superoptimization. By leveraging formal semantics two 
 separate programs can be proven equivalent, or in particular a target program can 
 be proven to be a refinement of a source program. Therefore by enumerating all 
@@ -27,6 +31,12 @@ synthesis.
 
 \section{Motivation}
 
+\fehr{Currently, all your points are valid, but you should try to give a bit more of
+a narrative. Here, this section feels more like a list of things rather than a
+story/motivation.}
+
+\fehr{You need to explain why this is a hard problem. i.e. there are a lot of
+instructions with complex semantics.}
 Manually written backends are buggy, instruction selection is a hard problem, and 
 most IRs (and even ISA) don't have readily available semantics with which the 
 compiler developers can check correctness. Without automated tools for formal 
@@ -60,7 +70,7 @@ and a more performant backend, all while being proven correct.
 
 For easier development, prototyping and experimenting I will be using the 
 xDSL\textsuperscript{citation needed} framework which contains an implementation
-of a RISC-V, as well as making use of the infrastructure in the open source project 
+of a RISC-V \fehr{something missing here}, as well as making use of the infrastructure in the open source project 
 xdsl-smt, an implementation of SMTLib for xDSL, and mlir-fuzz, which is used for 
 enumerating mlir programs. 
 
