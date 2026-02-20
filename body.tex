@@ -95,10 +95,13 @@ Souper\textsuperscript{citation needed}.
 \section{Semantics}
 \subsection{SMT dialect}
 \subsection{Refinements}
+\fehr{I would probably move refinements either as a subsection to Translation-validation, or after}
 Poison.
 \subsection{Translation Validation}
 
 \section{Superoptimization}
+\fehr{I would probably swap these two sections. Lowering synthesis as a general concept, and
+then MLIR-fuzz as a tool to at least do the enumeration part of it.}
 \subsection{MLIR-fuzz}
 \subsection{Lowering Synthesis}
 
@@ -120,10 +123,13 @@ Spiral
 
 \subsection{Languages and Tools}
 Python, Pylance, MLIR, xDSL, xdsl-smt, mlir-fuzz, z3, Git, GitHub
+\fehr{If you have Python and Pylance, should you also have C++ and clang? Ninja for
+building mlir-fuzz also?}
 
 \subsection{Open Source Contributions}
 \section{Starting Point}
 Knowledge of C++, Knowledge of Python
+\fehr{Probably would add some knowledge on compilers or something not language related?}
 
 \clearpage
 \chapter{Implementation}
@@ -132,6 +138,7 @@ completing some basic evaluation}
 \label{ch:impl}
 \section{Base RISC-V to SMT Semantics}
 \subsection{Registers as MLIR Types}
+\fehr{What is it supposed to be? Shouldn't it be in preparation?}
 \subsection{Immediates and Attributes}
 \section{SMT to Lean4}
 \subsection{Bitvector Operations}
