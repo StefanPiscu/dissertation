@@ -2,11 +2,18 @@
 \usepackage[T1]{fontenc}
 \usepackage{setspace}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{url}
 \usepackage[hidelinks]{hyperref}
 \usepackage{biblatex}
 \usepackage{csquotes}
+\usepackage[outputdir=build]{minted}
 \usepackage[x11names]{xcolor}
+\usepackage{titlesec}
+
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-50pt}{40pt}
 
 \ifdraft
 		\usepackage[
