@@ -152,8 +152,13 @@ irdl.operation @and {
 PDL (Pattern Definition Language) is a dialect used in order to define rewrite
 patterns. Such patterns can be used in order to transform code.
 
+This will be the primary method used to create a backend as PDL patterns can be applied efficiently
+by a generic algorithm. Thus, after obtaining a series of PDL rewrites for our IR, we can convert
+that into a backend.
+
 For example a the PDL pattern below converts the LLVM IR equality example above into the RISC-V 
-instructions below.
+instructions below:
+\clearpage
 \begin{minted}{mlir}
 pdl.pattern : benefit(1) {
   %0 = pdl.type : i64
@@ -178,17 +183,70 @@ pdl.pattern : benefit(1) {
 \stefan{Maybe put code examples in an Appendix}
 
 \section{Semantics}
+
+At the base of the entire project sits the idea of formal semantics for our dialects.
+We need to express how our instructions act on their inputs, and we want the semantics
+to be easy to work with using automatic solvers. Therefore we use SMT formulas and model
+our instructions as bitvector transformations. We also primarily care about basic arithmetic
+operations so bitvector theory seems like a natural choice.
+
 \subsection{SMT dialect}
+
+In order to remain within the confines of MLIR, we leverage the specialized SMT dialect 
+\cite{smt-mlir} to define the semantics of our IR instructions. This dialect can be 
+easily converted to SMT-Lib, a format that is widely used by many SMT solvers. Moreover
+we can use xdsl infrastructure to aid with parsing, printing and introspection. 
+
+\stefan{Should I mention effect state?}
+Below is an example of the semantics of the \texttt{riscv.sltw} instruction:
+\begin{minted}{mlir}
+%0 = "smt.bv.extract"(%arg0) {start = #builtin.int<0>, end = #builtin.int<31>} 
+    : (!smt.bv<64>) -> !smt.bv<32>
+%1 = "smt.bv.extract"(%arg1) {start = #builtin.int<0>, end = #builtin.int<4>} 
+    : (!smt.bv<64>) -> !smt.bv<5>
+%2 = "smt.bv.zero_extend"(%1) : (!smt.bv<5>) -> !smt.bv<32>
+%3 = "smt.bv.shl"(%0, %2) : (!smt.bv<32>, !smt.bv<32>) -> !smt.bv<32>
+%4 = "smt.bv.sign_extend"(%3) : (!smt.bv<32>) -> !smt.bv<64>
+\end{minted}
+
 \subsection{Translation Validation}
+As mentioned, the best part about using SMT semantics is leveraging SMT solvers to 
+prove things about different expressions. The primary use case for our purpose is
+proving the fact that our output program is a refinement of our input program. 
+equivalent program is found, we can stop enumerating. This also gives confidence in
+the correctness of our lowering, as the SMT solver ensures that the translation is
+valid for all inputs.
+
+Moreover having access to a translation validation tool for our dialects enables
+other benefits like verifying peephole rewrites \cite{smt-mlir}.
+
+\subsection{Poison}
+
+LLVM IR semantics has special treatement for undefined behaviour and certain operations.
+In particular we care about poison, which can appear as the results of some operations 
+``failing''. For example, when addition overflows the result of the addition is marked 
+as poison rather than any particular value. This allows for optimizations to happen
+by treating the poisoned operands as the most convenient values.
 
 \subsection{Refinements}
-Poison.
 
+As mentioned above, we want our target program to be a \emph{refinement} of our source.
+A program is a \emph{refinement} of another if the following proposition holds:
+\begin{equation*}
+\text{\emph{target inputs refine the source outputs}} \implies \text{\emph{target outputs refine the source outputs}}
+\end{equation*}
+
+What does it mean for a value to refine another? This is up to the implementation, however
+a clear example arises when considering poison. Any value \emph{refines} poison.
+
+An interesting case is refinements from integers of different bit widths to 64-bit 
+registers. There are multiple valid ways to define the `refinement' relation that leads
+to different optimizations.
 \section{Superoptimization}
-\fehr{I would probably swap these two sections. Lowering synthesis as a general concept, and
-then MLIR-fuzz as a tool to at least do the enumeration part of it.}
-\subsection{MLIR-fuzz}
+
 \subsection{Lowering Synthesis}
+
+\subsection{MLIR-fuzz}
 
 \section{Formal Verification}
 \subsection{Formal Specification of ISA Semantics}
