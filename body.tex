@@ -2,6 +2,7 @@
 \label{ch:intro}
 
 \section{Background}
+\label{background}
 
 IRs (Intermediary Representations) are used across different stages of compilation 
 in order to work at different levels of abstraction. This allows high level 
@@ -244,13 +245,59 @@ registers. There are multiple valid ways to define the `refinement' relation tha
 to different optimizations.
 \section{Superoptimization}
 
+As mentioned in \ref{background}, superoptimization is a technique where a compiler 
+attempts to find the optimal sequence for a loop free sequence of instructions. it
+does this via exhausting search over the program space and boolean tests to prove 
+equivalence of the source and target instruction sequences.
+
+It has been used to successfully find new optimizations both offline, and to improve
+programs by running it as a compilation pass. Some very popular compilers have 
+implemented and used this technique, like gnu superoptimizer for x86 assembly \cite{gnu-superopt},
+and LLVM for LLVM IR \cite{souper}.
+
 \subsection{Lowering Synthesis}
+
+Instead of searching for optimizations, one idea is to search for valid lowering between
+dialects. This is the novel idea behind the project, with the aim of evaluating the efficiency
+and exploring the benefits of this technique.
+
+The premise is simple, incur one large computational cost once for each source-target pair 
+in order to search and find a safe lowering. This is obviously useful when compiling
+to low level dialects that need to be lowered to various ISAs.
+
+It’s already clear that this would reduce the number of bugs, but it would also open
+the door for the easy extension of the infrastructure with superoptimizers and other
+verification tools.
 
 \subsection{MLIR-fuzz}
 
+In order to perform the enumerative search I'll be using MLIR-fuzz \cite{mlir-fuzz}.
+This tool, written in C++, uses the IRDL specification of a dialect in order to 
+enumerate all the programs with certain characterstics (number of free variables,
+number of instructions, etc.).
+
+I'll need to extend the tool with the risc-v dialect, including adding the ability to handle
+constants that are passed in as attributes (to allow the generaliztion of immediates).
+Thus the tool will enumerate risc-v programs with empty slots for the immediates that
+the SMT solver will fill with values that can make the programs equivalent.
+
 \section{Formal Verification}
 \subsection{Formal Specification of ISA Semantics}
+
+Sail, used as autorative semantics
+
+Lean, used to define bitvector semantics for instructions.
+
+Example of risc-v instruction written to smt, and what it would look like in lean.
+
 \subsection{Proofs of Equivalence}
+
+Leverage lean theorem proving to ensure correctness.
+
+Will write automated tool to convert smt to lean.
+
+Use bvdecide automated proving tools to prove correctness of semantics.
+
 
 \section{Requirements Analysis}
 
