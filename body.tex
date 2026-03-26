@@ -301,56 +301,222 @@ Use bvdecide automated proving tools to prove correctness of semantics.
 
 \section{Requirements Analysis}
 
-This section should contain the requirements of the project, followed by a plan
-to achieve those requirements within a real timeline.
+Read about MLIR and XDSL, understand how the frameworks function.
+
+Implement semantics for RISC-V dialect
+
+Tool to print semantics as lean theorems, to verify correctness
+
+Modify mlir-fuzz to enumerate risc-v program
+
+Handle attribute immediates in the exhaustive search of risc-v program.
 
 There should be leftover time to iterate, optimize and experiment.
 
 \section{Software Engineering}
 
 \subsection{Development Model}
-Spiral
+
+Use the spiral model.
+
+Spend time on building a functional prototype, assess the situation, and iterate again with
+additional feauture.
+
+Project works well with spiral model as scope can be expended after each iteration.
+
+Ex: 
+
+Working prototype for basic instructions.
+
+Expand with more complex instructions.
+
+Handle attributes and immediates.
+
+Optimize using heuristics (WIP)
 
 \subsection{Languages and Tools}
-Python, Pylance, C++, Clang, Ninja, MLIR, xDSL, xdsl-smt, mlir-fuzz, z3, Git, GitHub
-\fehr{If you have Python and Pylance, should you also have C++ and clang? Ninja for
-building mlir-fuzz also?}
+Languages: 
+Python, Pylance, C++, Clang, Ninja, 
+
+Tools and frameworks: MLIR, xDSL, xdsl-smt, mlir-fuzz, z3
+
+Source control: Git, GitHub
+
 
 \subsection{Open Source Contributions}
+
+Project build on top of open source projects.
+
+Contribution will take form of small PR with clean code that is easy to review.
+
+Focus on code clarity, and conciseness.
+
+Different than personal projects, good learning experience.
+
+This will make it easier for future work to be performed on top of the project.
 \section{Starting Point}
-Knowledge of C++, Knowledge of Python
-\fehr{Probably would add some knowledge on compilers or something not language related?}
+
+Knowledge of courses covered in the tripos.
+
+Have previously worked on C++ and Python projects, although large ones.
 
 \clearpage
 \chapter{Implementation}
-\stefan{I think I need to add more content here. This should be my main focus after
-completing some basic evaluation}
 \label{ch:impl}
 \section{Base RISC-V to SMT Semantics}
-\subsection{Registers as MLIR Types}
-\fehr{What is it supposed to be? Shouldn't it be in preparation?}
-\subsection{Immediates and Attributes}
+
+The first steps towards a minimal functioning prototype.
+
+This will take the form of lowering RISC-V dialect instructions into
+SMT dialect ones.
+
+Example of such a lowering.
+
+Obtain behaviour on bitvectors from behaviour on registers.
+
+\subsection{Converting MLIR Types}
+
+For the program to make sense we need to lower the types.
+
+Registers get converted from riscv.reg to smt.bv<64>
+
+We also need to convert attributes to smt bitvector.
+
+Immediates get converted to smt.bv<12> as per the RISC-V specification.
+
+Shift values get converted to smt.bv<6>
+
+\subsection{Abstracting away diffculty}
+
+Explain how I utilize classes, inheritance and currying to write clean and concise semantics.
+
+Create classes inheriting from OperationSemantics.
+
+Each class will handle it's input instructions and convert them to a standard form.
+
+Example of xor and xori.
+
+The classes then will take on argument, a function that will write the semantics of the underlying
+operation. Example, xor.
+
+A lot of the semantics functions are very similar, and such I leverage higher order functions
+to write these.
+
+Show how, by leveraging these abstractions, the semantics for a single instruction can be
+very easily expressed.
+
+Provide overview of sliglty more complicated cmp\_semantics, used for comparison operations.
+
+\subsection{Leveraging xdsl-smt}
+
+Provide an short overview of things used from xdsl-smt.
+
+SMT-Lowerer, TypeSemantics, OperationSemantics, PatternRewriter
+
 \section{SMT to Lean4}
+
+Next up, implement printer from smt dialect to risc-v.
+
+Create a mock risc-v operation and place it inside a block, with block arguments as 
+the arguments of the desired lean function.
+
+Lower the block, using the priorly defined semantics.
+
 \subsection{Bitvector Operations}
+
+Define an abstract class for a generic lean printable. Inherit from these class and
+specialize it for various operation types.
+
+Table containing a mapping from smt instruction to lean operations.
+
 \subsection{Generating theorems with bv\_decide}
+
+Use bv\_decide to print theorems of equivalence.
+
+Example of theorem.
+
 \section{RISC-V Enumeration}
+
+This next section focuses on extending the MLIR-fuzz tool with support.
+
 \subsection{RISC-V in IRDL}
+
+The risc-v dialect is only available in xdsl-smt.
+
+Mlir-fuzz uses mlir, therefore we need to handle the types and primitives
+in the risc-v dialect as opaque.
+
+I construct a new configuration for mlir-fuzz and add the IRDL to allow it
+to generate risc-v code.
+
 \subsection{Synthetic Operations}
+
+We need to generate holes for attributes, that will be later filled by the SMT solver.
+
+We ``lift'' operations with attributes into synth.ops
+
+Structure of a synth op, with an example.
+
+Explain generalizing types from irdl constraints.
 \section{Backend Synthesis}
+
+After leveraging mlir-fuzz to exhaustivly search the program space we need to leverage the
+semantics to check if the input and output programs are equivalent.
+
+We handle synth ops here, converting them into their underlying operation, but leaving
+marker operations (synth.FromValueOp, and synth.ConvOp) to later reconcile the values
+from given in the SMT model with the attributes in our program.
+
+Example of transformation the program goes trough.
+
+Performance concerns about using 64-bit registers followed by hypothesis that the restriction
+is the size of the immediates, not of the registers, which is defined by the architecture, and
+is a manageable size.
+
 \subsection{Refinements}
+
+As mentioned in preparation there are different refinements that we can consider.
+
+Explanation of sign extension refinement.
+
+Pros and cons analysis (some fast comparisons, other operations may require handling, as they may
+overflow, signedness/unsignedess is weird).
+
+Explanation of trunc refinement.
+
+Pros and cons (arithmetic is clear, comparisons become much harder to handle).
+
+Implement and test both refinements.
+
 \subsection{Multithreaded Iterative Deepening}
-I don't really know if the title works, here I'd talk about how I attempt to lower to lower
-sizes first, and have a pool of workers do so in parallel.
+
+Enumerate all input instructions, and wrap them into functions. Each individual instruction
+is can be handled individually.
+
+For each input instruction perform iterative deepening search of the program space.
+
+Store the results, with additional data for further analysis.
+
 \subsection{Conversion to PDL}
 The functions obtained from the enumerative search are then converted into PDL Patterns.
+
+Explain the conversion process, with an example.
+
 \section{Pruning the searchspace}
 This section will detail attempts at optimization that will hopefully succeed.
+
+I'll add more in this section, after implementing heuristic search.
+
 \section{Repository Overview}
+
+This page will consist of a table of all the relevant files, with a short description.
 
 \clearpage
 \chapter{Evaluation}
 \label{ch:eval}
 \section{Correctness}
+\stefan{I'm not writing bullet points here, as it's mostly going to be graphs, and results of
+analysis}
 
 \subsection{Semantics correctness}
 The semantics are proven equivalent to authoritative SAIL semantics in Lean.
@@ -388,15 +554,27 @@ The pdl transformations are proven equivalent using an smt solver.
 \subsection{Examined optimizations techniques for backend synthesis}
 
 \subsection{Novel Contribution}
-Here I don't know what to count as ``novel'' but hopefully there's
-something I can write here.
+Exploration of backend synthesis as a viable alternative to manually written lowerings.
+
+Analysis of different refinements, and their effect
 
 \section{Future Work}
-One thing I'll talk about here is making this a proper tool written in
+Creation of a proper tool written in
 a performance oriented language like C++.
-More things as ideas arise.
+
+Evaluating the performance of techniques to prune the search space via dataflow analysis.
+
+Using LLMs to attempt to search for lowerings of up to one size large than we searched for
+for the input instructions we failed to find.
 
 \section{Reflections}
-Waffling about things I learnt, with a focus on working on an open source
-project, and how it's different from a personal project.
+Working on an open source project, and how it's different from a personal project.
+
+Learning about important frameworks to compiler development like MLIR and LLVM.
+
+Learning about formal verification, and using it in a real project.
+
+Working on an open research project great, learning how research in academia is like.
+
+
 
