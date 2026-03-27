@@ -301,6 +301,9 @@ Use bvdecide automated proving tools to prove correctness of semantics.
 
 \section{Requirements Analysis}
 
+\fehr{Is this section supposed to be more high-level, or just a description of what you did after?
+i.e. for instance "Verify the correctness of the correctness of the semantics using Lean"}
+
 Read about MLIR and XDSL, understand how the frameworks function.
 
 Implement semantics for RISC-V dialect
@@ -316,6 +319,8 @@ There should be leftover time to iterate, optimize and experiment.
 \section{Software Engineering}
 
 \subsection{Development Model}
+
+\fehr{Probably talking here about the open source model as well?}
 
 Use the spiral model.
 
@@ -337,8 +342,10 @@ Optimize using heuristics (WIP)
 \subsection{Languages and Tools}
 Languages: 
 Python, Pylance, C++, Clang, Ninja, 
+\fehr{MLIR as well probably, Clang should be in tools maybe?}
 
 Tools and frameworks: MLIR, xDSL, xdsl-smt, mlir-fuzz, z3
+\fehr{Probably add pyright as this is fairly different than how people usually write python}
 
 Source control: Git, GitHub
 
@@ -354,6 +361,10 @@ Focus on code clarity, and conciseness.
 Different than personal projects, good learning experience.
 
 This will make it easier for future work to be performed on top of the project.
+
+\fehr{Also, open source means that the code will still be maintained after the project ends, as long
+as the overarching project is maintained.}
+
 \section{Starting Point}
 
 Knowledge of courses covered in the tripos.
@@ -387,6 +398,8 @@ Immediates get converted to smt.bv<12> as per the RISC-V specification.
 Shift values get converted to smt.bv<6>
 
 \subsection{Abstracting away diffculty}
+
+\fehr{This section feels weird to me, but I guess you found other theses that used something like this?}
 
 Explain how I utilize classes, inheritance and currying to write clean and concise semantics.
 
@@ -441,6 +454,7 @@ This next section focuses on extending the MLIR-fuzz tool with support.
 
 \subsection{RISC-V in IRDL}
 
+\fehr{Technically it's in xDSL as well, but yeah it's not in MLIR}
 The risc-v dialect is only available in xdsl-smt.
 
 Mlir-fuzz uses mlir, therefore we need to handle the types and primitives
@@ -515,6 +529,8 @@ This page will consist of a table of all the relevant files, with a short descri
 \chapter{Evaluation}
 \label{ch:eval}
 \section{Correctness}
+\fehr{What might be helpful here is a list of research questions. Not sure if this is expected or not for these kind of theses, but
+that's usually quite helpful in papers at least.}
 \stefan{I'm not writing bullet points here, as it's mostly going to be graphs, and results of
 analysis}
 
