@@ -172,10 +172,12 @@ pdl.pattern : benefit(1) {
   %6 = pdl.result 0 of %5
   pdl.rewrite %5 {
     %7 = pdl.type : !riscv.reg
-    %8 = pdl.operation "riscv.sub" (%1, %2 : !pdl.value, !pdl.value) -> (%7 : !pdl.type)
+    %8 = pdl.operation "riscv.sub" (%1, %2 : !pdl.value, !pdl.value) 
+        -> (%7 : !pdl.type)
     %9 = pdl.result 0 of %8
     %10 = pdl.attribute = 1 : si12
-    %11 = pdl.operation "riscv.sltiu" (%9 : !pdl.value) {"immediate" = %10} -> (%7 : !pdl.type)
+    %11 = pdl.operation "riscv.sltiu" (%9 : !pdl.value) {"immediate" = %10} 
+        -> (%7 : !pdl.type)
     %12 = pdl.result 0 of %11
     pdl.replace %5 with (%12 : !pdl.value)
   }
@@ -284,147 +286,326 @@ the SMT solver will fill with values that can make the programs equivalent.
 \section{Formal Verification}
 \subsection{Formal Specification of ISA Semantics}
 
-Sail, used as autorative semantics
+
+Firstly, we need to establish some semantics for risc-v, so we can talk about the correctness
+of a lowering. We take as our source of truth, semantics defined in the sail language \cite{sail-paper}.
+In particular, use the hand-written bitblastable semantics written in Lean, that are proven
+equivalent to our source of truth. \cite{riscv-lean}
 
 Lean, used to define bitvector semantics for instructions.
 
+I use lean, as it is feasable to convert from the smt semantics of a riscv function, into
+a bitblastable lean function that has the same semantics. As can be seen in the example below.
+
 Example of risc-v instruction written to smt, and what it would look like in lean.
+
+The risc-v instruction:
+\begin{minted}{mlir}
+%0 = riscv.slt %arg0, %arg1 : (!riscv.reg, !riscv.reg) -> !riscv.reg 
+\end{minted}
+
+Which gets lowered to semantics
+\begin{minted}{mlir}
+%0 = "smt.bv.slt"(%arg0, %arg1) : 
+    (!smt.bv<64>, !smt.bv<64>) -> !smt.bool
+%1 = smt.bv.constant #smt.bv<0> : !smt.bv<64>
+%2 = smt.bv.constant #smt.bv<1> : !smt.bv<64>
+%3 = "smt.ite"(%0, %2, %1) : 
+    (!smt.bool, !smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
+\end{minted}
+
+Can be expressed in lean like this:
+\begin{minted}{lean}
+let a0 : Bool := (BitVec.slt arg1 arg0) ;
+let a1 : BitVec 64 := 0 ;
+let a2 : BitVec 64 := 1 ;
+let a3 : BitVec 64 := (cond a0 a2 a1) ;
+\end{minted}
+
+
 
 \subsection{Proofs of Equivalence}
 
-Leverage lean theorem proving to ensure correctness.
+But why do we care about bitblastable semantics written in lean?
 
-Will write automated tool to convert smt to lean.
+Well, lean, being a proof assistant, has access to autmated tactics to prove
+such theorems that have such semantics. As an example we can write a proof
+that our semantics for \texttt{riscv.slt} are the same as those we deem
+authoritative:
 
-Use bvdecide automated proving tools to prove correctness of semantics.
+\begin{minted}{lean}
+theorem slt_eq (a0 : BitVec 64) (a1 : BitVec 64) 
+    : RV64.slt a0 a1 = _slt a0 a1 := by
+  fold [RV64.slt, _slt]
+  bv_decide
+\end{minted}
 
+The plan to prove correctness now becomes to automatically convert all of our
+smt semantics to a lean function, and then automatically write all the theorems
+of equivalence, which should then be proven correct by the proof assistant.
+
+\section{Evaluation questions}
+\stefan{I'll write this section, after I write evaluation, it should be a mirror
+posing which questions are to be asked, and evaluated in the project.}
 
 \section{Requirements Analysis}
 
-\fehr{Is this section supposed to be more high-level, or just a description of what you did after?
-i.e. for instance "Verify the correctness of the correctness of the semantics using Lean"}
+I establish the following series of requirments for the project, in order to build a succesful
+implementation plan:
 
-Read about MLIR and XDSL, understand how the frameworks function.
+\begin{itemize}
+  
+\item Building a proper understanding of the mlir and xdsl frameworks. 
+Thus some of my time will be spent researching how mlir works, and how to work within the 
+framework.
 
-Implement semantics for RISC-V dialect
+\item Implement semantics for RISC-V dialect as a lowering to the SMT dialect. These semantics
+will be used throught the rest of the project.
 
-Tool to print semantics as lean theorems, to verify correctness
+\item Build a tool to convert the smt semantics implemented above into Lean theorems. Use it
+to formally prove the correctness of the semantics.
 
-Modify mlir-fuzz to enumerate risc-v program
+\item Modify mlir-fuzz to properly enumerate risc-v program. Add handling for attribute immediates
+while enumerating risc-v programs.
 
-Handle attribute immediates in the exhaustive search of risc-v program.
+\item Write code to synthesize a backend to risc-v, collecting relevant data.
 
-There should be leftover time to iterate, optimize and experiment.
+\end{itemize}
 
 \section{Software Engineering}
 
 \subsection{Development Model}
 
-\fehr{Probably talking here about the open source model as well?}
+Given that the project is building prototype for a novel idea, exprimentation and iteration
+will be required in the development process, thus I've elected to use the spiral model of
+development.
 
-Use the spiral model.
+Thus a working prototype will be implemented with some limited scope. Upon completion requirments
+will be reevaluated and the scope will be apropriatly expanded.
 
-Spend time on building a functional prototype, assess the situation, and iterate again with
-additional feauture.
+The following are some examples of features that will be added progresively while iterating:
+\begin{enumerate}
 
-Project works well with spiral model as scope can be expended after each iteration.
+\item Working end-to-end prototype for basic instructions
 
-Ex: 
+\item Expand with more complex instructions
 
-Working prototype for basic instructions.
+\item Handle attributes and immediates
 
-Expand with more complex instructions.
+\item Optimize using heuristics
+  
+\end{enumerate}
 
-Handle attributes and immediates.
-
-Optimize using heuristics (WIP)
+The code will be also be reviewed by my supervisor as part of upstreaming the changes.
 
 \subsection{Languages and Tools}
-Languages: 
-Python, Pylance, C++, Clang, Ninja, 
-\fehr{MLIR as well probably, Clang should be in tools maybe?}
 
-Tools and frameworks: MLIR, xDSL, xdsl-smt, mlir-fuzz, z3
-\fehr{Probably add pyright as this is fairly different than how people usually write python}
+The project will be written primarily with Python. I will be using the VSCode IDE with the
+Pylance extension, which provides strict type checking.
 
-Source control: Git, GitHub
+Additionally, the project uses C++ for mlir-fuzz, which I will be compiling with
+Clang and Ninja.
 
+Throughout the project I will be using a variety of tools and frameworks:
+\begin{itemize}
+\item MLIR 
+\item xDSL
+\item xdsl-smt
+\item mlir-fuzz
+\item z3, as an smt solver
+\item Git and GitHub for source control
+\end{itemize}
+
+\subsection{Development Environment}
+This subsection will include the specs of my laptop and the PC I'm doing evaluation on.
 
 \subsection{Open Source Contributions}
 
-Project build on top of open source projects.
+The project will be built on top of the open source projects xdsl-smt \cite{xdsl-smt}.
+As such the contributions will be upstreamed. As a result there will be additional attention 
+given to code clarity and conciseness. This also means that a good understanding of the xdsl-smt
+project will be required in order to not reimplement features and be able to leverage already
+existing code to the fullest.
 
-Contribution will take form of small PR with clean code that is easy to review.
-
-Focus on code clarity, and conciseness.
-
-Different than personal projects, good learning experience.
-
-This will make it easier for future work to be performed on top of the project.
-
-\fehr{Also, open source means that the code will still be maintained after the project ends, as long
-as the overarching project is maintained.}
+This will be different that working on a solo project, while also providing valuable experience
+for working in industry and other research projects. Focus on clear and clean code should make
+it easier to maintain and build upon in the future.
 
 \section{Starting Point}
 
-Knowledge of courses covered in the tripos.
-
-Have previously worked on C++ and Python projects, although large ones.
+As a starting point I only have knowledge that is considered covered in the courses in Part IA and IB
+of the tripos, with some additional experience working on C++ projects.
 
 \clearpage
 \chapter{Implementation}
 \label{ch:impl}
 \section{Base RISC-V to SMT Semantics}
 
-The first steps towards a minimal functioning prototype.
+In order to lower a program written in the RISC-V dialect to its SMT semantics, we need to
+be able to lower the types of all the primitive values (registers and immediates) together 
+with all of the instructions as a sequence of SMT instructions. Thus we need to model for
+the RISC-V assmenbly.
 
-This will take the form of lowering RISC-V dialect instructions into
-SMT dialect ones.
-
-Example of such a lowering.
-
-Obtain behaviour on bitvectors from behaviour on registers.
 
 \subsection{Converting MLIR Types}
 
-For the program to make sense we need to lower the types.
+There are only a few types of values we will encounter in RISC-V code, given we are working 
+with values in CPU registers, and encoded within instructions they can all be represented as 
+bitvectors of apropriate sizes, however they will need to be extened to the same size for 
+our smt operations.
 
-Registers get converted from riscv.reg to smt.bv<64>
+\begin{itemize}
+\item Register values are encoded in 64-bit bitvectors
+\item Immediates are 12 bits, and should be extended to 64 bits
+\item Shift values are 6 bits, and should be extended to 64 bits
+\end{itemize}
 
-We also need to convert attributes to smt bitvector.
+\subsection{Handling diffrent Instruction Types}
 
-Immediates get converted to smt.bv<12> as per the RISC-V specification.
+RISC-V instructions can be divided into a few diffrent types, based on their structure.
+Therefore we can extract the values, apply the appropriate conversion, then use the values
+for the SMT semantics.
 
-Shift values get converted to smt.bv<6>
+We have the following instruction types:
+\begin{itemize}
+\item Register-Register Operations
 
-\subsection{Abstracting away diffculty}
+We can directly get the values of the registers and convert them to 64 bit bitvectors.
 
-\fehr{This section feels weird to me, but I guess you found other theses that used something like this?}
+\item Register-Register Word Operation
 
-Explain how I utilize classes, inheritance and currying to write clean and concise semantics.
+Since we are using RV64, we also have some operations that are meant to work on a 32-bit word.
 
-Create classes inheriting from OperationSemantics.
+The semantics for this are the same as for Register-Register Operations, but the values are 
+first truncated to 32 bits, and extended back at the end of the operation.
 
-Each class will handle it's input instructions and convert them to a standard form.
+Example: 
+\begin{minted}{mlir}
+%op1 =  smt.bv.extract %rs1 from 0 : (!smt.bv<64>) -> !smt.bv<32>
+%op2 =  smt.bv.extract %rs2 from 0 : (!smt.bv<64>) -> !smt.bv<32>
+// Perform the operation on the truncated operands, yielding %tmp
+%res = smt.bv.sign_extend %tmp : (!smt.bv<12>) -> !smt.bv<64>
+\end{minted}
 
-Example of xor and xori.
+\item Register-Immediate Operation
 
-The classes then will take on argument, a function that will write the semantics of the underlying
-operation. Example, xor.
+We extract the immediate and extend it to a full sized bit vector, which can then operate 
+with the register.
 
-A lot of the semantics functions are very similar, and such I leverage higher order functions
-to write these.
+Example: 
+\begin{minted}{mlir}
+%op1 = %rs1
+%op2 = smt.bv.sign_extend %imm : (!smt.bv<12>) -> !smt.bv<64>
+// Perform the operation on the operands
+\end{minted}
 
-Show how, by leveraging these abstractions, the semantics for a single instruction can be
-very easily expressed.
+\item Register-Immediate Word Operation
 
-Provide overview of sliglty more complicated cmp\_semantics, used for comparison operations.
+We sign extend the immediate to 64 bits, than truncate the result, before sign extending it again.
+
+Example: 
+\begin{minted}{mlir}
+%op1 = %rs1
+%op2 = smt.bv.sign_extend %imm : (!smt.bv<12>) -> !smt.bv<64>
+// Perform the operation on the operands, yielding %tmp
+%tmp2 = smt.bv.extract %rs2 from 0 : (!smt.bv<64>) -> !smt.bv<32>
+%res = smt.bv.sign_extend %tmp2 : (!smt.bv<32>) -> !smt.bv<64>
+\end{minted}
+
+\item Register-Register Shift (Word) Operation
+
+We truncate the shift register (since only the lower bits matter), and then zero-extend it back 
+to perform the operation.
+
+Example for 64 bits:
+\begin{minted}{mlir}
+%op1 = %rs1
+%tmp = smt.bv.extract %rs2 from 0 : (!smt.bv<64>) -> !smt.bv<6>
+%op2 = smt.bv.zero_extend %tmp : (!smt.bv<6>) -> !smt.bv<64>
+//Perform the operation, using op2 as the shift value
+\end{minted}
+
+For word operations we use 32 bit bitvectors, truncate rs1, and sign extend the result.
+
+\item Register-Shamt Shift (Word) Operation
+
+Extend the shift value from 6 bits the 64 (32) bits.
+
+Example for 64 bits: 
+\begin{minted}{mlir}
+%op1 = %rs
+%op2 = smt.bv.zero_extend %tmp : (!smt.bv<6>) -> !smt.bv<64>
+//Perform the operation
+\end{minted}
+
+Again, word operations will have additional truncation of \texttt{\%rs} followed by sign extension of \texttt{\%res}.
+
+\end{itemize}
+
+
+\subsection{Exploiting identical semantics}
+
+Across different instruction types we encounter instructions with the same underlying behaviour.
+Take for example \texttt{riscv.add} and \texttt{riscv.addi}. Their behaviour can be expressed as a single
+\texttt{smt.bv.add} opreration on the relevant values. So, as long as we are careful on how we extract
+the values from each instruction we can exploit this similarity so have cleaner and more concise code.
+
+Moreover, we also see how many semantics would only differ by the smt operation they perform.
+Thus we recognize the following categories:
+
+\begin{itemize}
+
+\item Trivial Operations 
+These operations can be expressed as a single smt operation.
+
+\begin{minted}{mlir}
+// obtain op1 and op2 as SSA Values
+%res = smt.OPERATION %op1 %op2 : (!smt.bv<?>, !smt.bv<?>) -> !smt.bv<?>
+// convert res to !smt.bv<64>
+\end{minted}
+
+The way we obtain the operands and process the result is defined by the instruction type, and
+they type of \texttt{?} can be inferred from the types of the operands.
+
+This is a the common case and includes a wide range of operations.
+
+
+\item Comparisons
+
+These require special care as the smt dialect comparison operations yield boolean values
+that need to be converted into bitvectors. So semantics for comparison operations look like the
+this:
+
+\begin{minted}{mlir}
+// obtain op1 and op2 as SSA Values
+res_bool = smt.COMPARISON op1 op2 : (!smt.bv<?>, !smt.bv<?>) -> !smt.bv<?>
+%zero = smt.bv.constant #smt.bv<0> : !smt.bv<64>
+%on = smt.bv.constant #smt.bv<1> : !smt.bv<64>
+%res = "smt.ite"(%0, %2, %1) :
+    (!smt.bool, !smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
+\end{minted}
+
+\item Other
+
+Some instructions have completely custom semantics, however with careful implementation
+they plugged into the existing instruction types.
+
+\end{itemize}
+
+By building abstractions for these instruction types and common behaviours, we can very easily
+implement the semantics for an instruction. This yields an easily extensible framework for 
+defining semantics for RISC-V in the smt dialect.
 
 \subsection{Leveraging xdsl-smt}
 
-Provide an short overview of things used from xdsl-smt.
+I use tools provided by xdsl and xdsl smt to create mlir blocks like the examples I've shown
+above for every operation and SSA value. After that, I register my lowerings to xdsl-smt and
+a lowering pass is created that recursively lowers all of the instructions from a source program
+into a program using the smt dialect.
 
-SMT-Lowerer, TypeSemantics, OperationSemantics, PatternRewriter
+The smt program is then converted into a SMTLib S-expression, which will can be used by SMT solvers
+in a variety of tools, in particular we care about validating the equivalence between different
+such expressions.
 
 \section{SMT to Lean4}
 
