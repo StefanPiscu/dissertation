@@ -245,7 +245,7 @@ In order to remain within the confines of MLIR, we leverage the specialized SMT 
 \cite{smt-mlir} to define the semantics of our IR instructions. This dialect can be 
 easily converted to SMT-Lib, a format that is widely used by many SMT solvers. Moreover
 we can use xDSL infrastructure to aid with parsing, printing and introspection. 
-
+%
 Below is an example of the semantics of the \texttt{riscv.sltw} instruction. The more complex
 behaviour of the instruction (which isn't really relevant for this example) gets broken down 
 into simpler primitives which a SMT solver can work with.
@@ -315,80 +315,80 @@ as the SMT solver ensures that the translation is valid for all inputs.
 %
 There are more benefits of having such semantics, as presented in \cite{smt-mlir}, however these
 aren't the focus of the project.
-\section{Superoptimization}
-\fehr{We should probably not call this section "Superoptimization", as we are just
-using these things for backend synthesis.}
+\section{Lowering Synthesis}
+%\fehr{We should probably not call this section "Superoptimization", as we are just
+%using these things for backend synthesis.}
+%\fehr{Superoptimization is not restrained to loop free sequences, it's just that it's
+%mostly the only thing we know how to do. It also doesn't do it only via exhaustive
+%search, this is just one of the techniques that exist.}
+%\fehr{Can you try to merge some of the paragraphs together? Also, how much is this
+%preparation versus explaining what you are doing in your project? It is nice to
+%identify what already exists (lowering synthesis) and what is your contribution (using
+%it for dialects), and I think you should only talk about the first part here?}
+%\stefan{I guess the idea of this chapter is to present the plan for the project}
 
-\fehr{Superoptimization is not restrained to loop free sequences, it's just that it's
-mostly the only thing we know how to do. It also doesn't do it only via exhaustive
-search, this is just one of the techniques that exist.}
 As mentioned in \ref{background}, superoptimization is a technique where a compiler 
-attempts to find the optimal sequence for a loop free sequence of instructions. it
-does this via exhausting search over the program space and boolean tests to prove 
-equivalence of the source and target instruction sequences.
-
+attempts to find the optimal sequence of instructions that has the same semantics as a source
+sequence. One technique to do this is via exhausting search over the program space and boolean 
+tests to prove equivalence of the source and target.
+%
 It has been used to successfully find new optimizations both offline, and to improve
 programs by running it as a compilation pass. Some very popular compilers have 
 implemented and used this technique, like gnu superoptimizer for x86 assembly \cite{gnu-superopt},
 and souper for LLVM IR \cite{souper}.
 
-\subsection{Lowering Synthesis}
 
-\fehr{Can you try to merge some of the paragraphs together? Also, how much is this
-preparation versus explaining what you are doing in your project? It is nice to
-identify what already exists (lowering synthesis) and what is your contribution (using
-it for dialects), and I think you should only talk about the first part here?}
 
-Instead of searching for optimizations, one idea is to search for valid lowering between
-dialects. This is the novel idea behind the project, with the aim of evaluating the efficiency
-and exploring the benefits of this technique.
-
+Lowering synthesis is a similar concept, but instead of searching for optimizations it searches
+for valid lowerings between dialects. This is the novel idea behind the project, with the aim of
+evaluating the efficiency and exploring the benefits of this technique.
+%
 The premise is simple, incur one large computational cost once for each source-target pair 
 in order to search and find a safe lowering. This is obviously useful when compiling
 to low level dialects that need to be lowered to various ISAs.
+%
+This reduces the number of bugs, but it also opens the door for the easy extension of the 
+infrastructure with superoptimizers and other verification tools.
 
-It’s already clear that this would reduce the number of bugs, but it would also open
-the door for the easy extension of the infrastructure with superoptimizers and other
-verification tools.
+\subsection*{MLIR-fuzz}
 
-\subsection{MLIR-fuzz}
-
-In order to perform the enumerative search I'll be using MLIR-fuzz \cite{mlir-fuzz}.
+In order to perform the enumerative search I use MLIR-fuzz \cite{mlir-fuzz}.
 This tool, written in C++, uses the IRDL specification of a dialect in order to 
 enumerate all the programs with certain characterstics (number of free variables,
 number of instructions, etc.).
-
-I'll need to extend the tool with the risc-v dialect, including adding the ability to handle
+%
+I extend the tool with the RISC-V dialect, including adding the ability to handle
 constants that are passed in as attributes (to allow the generaliztion of immediates).
-Thus the tool will enumerate risc-v programs with empty slots for the immediates that
-the SMT solver will fill with values that can make the programs equivalent.
+Thus the tool enumerates risc-v programs with empty slots for the immediates that
+the SMT solver fills with values that can make the programs equivalent.
 
 \section{Formal Verification}
-\subsection{Formal Specification of ISA Semantics}
 
+%\fehr{We are using lean mostly because it is a proof assistant (so it is very unlikely
+%it has large bugs in its core), and it is very expressive.}
+%\fehr{Those examples are great! And I think we should have more of these in the earlier
+%sections as well to help the reader understand all the concepts}
 
-Firstly, we need to establish some semantics for risc-v, so we can talk about the correctness
-of a lowering. We take as our source of truth, semantics defined in the sail language \cite{sail-paper}.
-In particular, use the hand-written bitblastable semantics written in Lean, that are proven
-equivalent to our source of truth. \cite{riscv-lean}
+In this work, we establish some semantics for RISC-V, so we can talk about the correctness
+of a lowering. We take as a source of truth, semantics defined in the sail language \cite{sail-paper}.
+In particular, we use hand-written bitblastable semantics written in Lean, that are proven
+equivalent to the source of truth. \cite{riscv-lean}
+%
+Lean is a proof assistant which is used to obtain machine verified theorems. In order to achieve
+a satisfactory level of correctness for our semantics we require Lean theorems that prove the
+equivalences between our established RISC-V semantics and those we deem correct. 
 
-Lean, used to define bitvector semantics for instructions.
+\subsection{Proofs of Equivalence}
 
-\fehr{We are using lean mostly because it is a proof assistant (so it is very unlikely
-it has large bugs in its core), and it is very expressive.}
-I use lean, as it is feasable to convert from the smt semantics of a riscv function, into
-a bitblastable lean function that has the same semantics. As can be seen in the example below.
-
-\fehr{Those examples are great! And I think we should have more of these in the earlier
- sections as well to help the reader understand all the concepts}
-Example of risc-v instruction written to smt, and what it would look like in lean.
-
+We first obtain Lean functions that are representative of our RISC-V semantics, and we use them
+as part of our equivalence theorems. We achieve this by first lowering the RISC-V operation to 
+the SMT dialect, and them converting the SMT code to Lean, like in the following example:
 The risc-v instruction:
 \begin{minted}{mlir}
 %0 = riscv.slt %arg0, %arg1 : (!riscv.reg, !riscv.reg) -> !riscv.reg 
 \end{minted}
 
-Which gets lowered to semantics
+Which gets lowered to semantics:
 \begin{minted}{mlir}
 %0 = "smt.bv.slt"(%arg0, %arg1) : 
     (!smt.bv<64>, !smt.bv<64>) -> !smt.bool
@@ -406,21 +406,16 @@ let a2 : BitVec 64 := 1 ;
 let a3 : BitVec 64 := (cond a0 a2 a1) ;
 \end{minted}
 
+%\fehr{This is not really using the academic language.}
+%\fehr{Try to reformat this subsection into two distinct paragraph/ideas. First,
+%we want to have proof of equivalence, so we are mapping the SMt semantics to lean,
+%and seciond, we use the bitblastable semantics to automatically prove this
+%equivalence.}
 
 
-\subsection{Proofs of Equivalence}
-
-\fehr{This is not really using the academic language.}
-\fehr{Try to reformat this subsection into two distinct paragraph/ideas. First,
-we want to have proof of equivalence, so we are mapping the SMt semantics to lean,
-and seciond, we use the bitblastable semantics to automatically prove this
-equivalence.}
-But why do we care about bitblastable semantics written in lean?
-
-Well, lean, being a proof assistant, has access to autmated tactics to prove
-such theorems that have such semantics. As an example we can write a proof
-that our semantics for \texttt{riscv.slt} are the same as those we deem
-authoritative:
+We then formulate equivalence theorems like the following, usinging the bv\_decide
+tactic, which leverages the bitblastable nature of the semantics and invokes a SAT solver
+to ensure that the theorem holds:
 
 \begin{minted}{lean}
 theorem slt_eq (a0 : BitVec 64) (a1 : BitVec 64) 
@@ -429,17 +424,13 @@ theorem slt_eq (a0 : BitVec 64) (a1 : BitVec 64)
   bv_decide
 \end{minted}
 
-The plan to prove correctness now becomes to automatically convert all of our
-smt semantics to a lean function, and then automatically write all the theorems
-of equivalence, which should then be proven correct by the proof assistant.
+As part of this project, we built a tool to perform these transformation programatically, so
+we are able to obtain a machine verified proof of correctness from our RISC-V semantics.
 
-\section{Evaluation questions}
-\stefan{I'll write this section, after I write evaluation, it should be a mirror
-posing which questions are to be asked, and evaluated in the project.}
 
 \section{Requirements Analysis}
 
-I establish the following series of requirments for the project, in order to build a succesful
+We established the following series of requirments for the project, in order to build a succesful
 implementation plan:
 
 \begin{itemize}
@@ -448,81 +439,76 @@ implementation plan:
 Thus some of my time will be spent researching how mlir works, and how to work within the 
 framework.
 
-\item Implement semantics for RISC-V dialect as a lowering to the SMT dialect. These semantics
-will be used throught the rest of the project.
+\item Implement semantics for RISC-V dialect as a lowering to the SMT dialect. 
 
-\item Build a tool to convert the smt semantics implemented above into Lean theorems. Use it
-to formally prove the correctness of the semantics.
+\item Build a tool to convert the smt semantics implemented above into Lean theorems. 
+Formally prove the correctness of the semantics.
 
-\item Modify mlir-fuzz to properly enumerate risc-v program. Add handling for attribute immediates
+\item Modify mlir-fuzz to properly enumerate RISC-V program. Add handling for attribute immediates
 while enumerating risc-v programs.
 
-\item Write code to synthesize a backend to risc-v, collecting relevant data.
+\item Write code to synthesize a backend to RISC-V, collecting relevant data.
 
 \end{itemize}
+
+\subsection{Evaluation questions}
+\stefan{I'll write this section, after I write evaluation, it should be a mirror
+posing which questions are to be asked, and evaluated in the project.}
 
 \section{Software Engineering}
 
 \subsection{Development Model}
 
-\fehr{It took me a while to understand this text. Can you try to rewrite it?}
-Given that the project is building prototype for a novel idea, exprimentation and iteration
-will be required in the development process, thus I've elected to use the spiral model of
-development.
+%\fehr{It took me a while to understand this text. Can you try to rewrite it?}
+%\fehr{Should this be using the future tense? This already happened, so shouldn't you
+%say something like "We first agreed on a small working prototype, that we then
+%expanded with the following features"?}
 
-Thus a working prototype will be implemented with some limited scope. Upon completion requirments
-will be reevaluated and the scope will be apropriatly expanded.
-
-\fehr{Should this be using the future tense? This already happened, so shouldn't you
-say something like "We first agreed on a small working prototype, that we then
-expanded with the following features"?}
-The following are some examples of features that will be added progresively while iterating:
+Due to the novel nature of the project, development followed the spiral model, which focuses on 
+iteration and risk assesment.
+%
+Therefore a working prototype was implemented with some limited scope. Upon completion requirments
+were be reevaluated and the scope was apropriatly expanded, and the process was repeated. 
+The project went through the following major iteration cycles:
 \begin{enumerate}
 
 \item Working end-to-end prototype for basic instructions
 
-\item Expand with more complex instructions
+\item Expanded prototype with more complex instructions
 
-\item Handle attributes and immediates
+\item Handling attributes and immediates
 
-\item Optimize using heuristics
+\item Optimized  using heuristics
   
 \end{enumerate}
 
-The code will be also be reviewed by my supervisor as part of upstreaming the changes.
-
 \subsection{Languages and Tools}
 
-The project will be written primarily with Python. I will be using the VSCode IDE with the
-Pylance extension, which provides strict type checking.
+%\fehr{Should you explain in each bullet point what are you using the tool for?
+%Otherwise, I don't see the point of a bullet point list here.}
 
-Additionally, the project uses C++ for mlir-fuzz, which I will be compiling with
-Clang and Ninja.
-
-\fehr{Should you explain in each bullet point what are you using the tool for?
-Otherwise, I don't see the point of a bullet point list here.}
-Throughout the project I will be using a variety of tools and frameworks:
-\begin{itemize}
-\item MLIR 
-\item xDSL
-\item xdsl-smt
-\item mlir-fuzz
-\item z3, as an smt solver
-\item Git and GitHub for source control
-\end{itemize}
+The project was written primarily in Python, within the VSCode editor with the pylance extension,
+which provides strict type checking. In addition, the project also used C++, for the work performed
+on mlir-fuzz, which was compiled using clang and ninja.
+%
+Throughout the project I've extensively used the MLIR and xDSL frameworks, while working on the
+xdsl-smt project (containing the majority of the project's code) and mlir-fuzz (containg the 
+code for program enumeration and exhaustive search).
+%
+Due to the open source nature of the projectgit and GitHub were used for source control.
 
 \subsection{Development Environment}
 This subsection will include the specs of my laptop and the PC I'm doing evaluation on.
 
 \subsection{Open Source Contributions}
 
-The project will be built on top of the open source projects xdsl-smt \cite{xdsl-smt}.
-As such the contributions will be upstreamed. As a result there will be additional attention 
+The project was be built on top of the open source project xdsl-smt \cite{xdsl-smt}.
+As such the contributions (were)/(will be) upstreamed. As a result there was additional attention 
 given to code clarity and conciseness. This also means that a good understanding of the xdsl-smt
-project will be required in order to not reimplement features and be able to leverage already
-existing code to the fullest.
+project was required to not reimplement features and be able to leverage already existing code 
+effectively.
 
-This will be different that working on a solo project, while also providing valuable experience
+This was different that working on a solo project, while also providing valuable experience
 for working in industry and other research projects. Focus on clear and clean code should make
 it easier to maintain and build upon in the future.
 
@@ -530,6 +516,7 @@ it easier to maintain and build upon in the future.
 
 As a starting point I only have knowledge that is considered covered in the courses in Part IA and IB
 of the tripos, with some additional experience working on C++ projects.
+Moreover I had no prior knowledge of the xdsl-smt and mlir-fuzz projects before I started development.
 
 \clearpage
 \chapter{Implementation}
