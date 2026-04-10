@@ -1,0 +1,3 @@
+\begin{MintedVerbatim}[commandchars=\\\{\},codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8\relax}]
+\PYG{esc}{\textcolor{red}{\texttt{\%res}}} = \PYG{esc}{\textcolor{blue}{\texttt{"arith.addi"}}}(\PYG{esc}{\textcolor{green!50!black}{\texttt{\%a, \%b}}}) \PYG{esc}{\textcolor{orange}{\texttt{\{overflowFlags = 0 : i64\}}}} : \PYG{esc}{\textcolor{teal}{\texttt{(i32, i32)}}} \PYGZhy{}\PYGZgt{} \PYG{esc}{\textcolor{magenta}{\texttt{i32}}}
+\end{MintedVerbatim}

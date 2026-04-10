@@ -1,0 +1,60 @@
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Background}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Motivation}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Approach}{2}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Previous Work}{2}{section.1.4}%
+\contentsline {chapter}{\numberline {2}Preparation}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}MLIR}{3}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Semantics}{5}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}SMT dialect}{6}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Refinements}{6}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Verifying rewrites}{7}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}Lowering Synthesis}{7}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Formal Verification}{8}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Proofs of Equivalence}{8}{subsection.2.4.1}%
+\contentsline {section}{\numberline {2.5}Requirements Analysis}{9}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Evaluation questions}{9}{subsection.2.5.1}%
+\contentsline {section}{\numberline {2.6}Software Engineering}{9}{section.2.6}%
+\contentsline {subsection}{\numberline {2.6.1}Development Model}{9}{subsection.2.6.1}%
+\contentsline {subsection}{\numberline {2.6.2}Languages and Tools}{10}{subsection.2.6.2}%
+\contentsline {subsection}{\numberline {2.6.3}Development Environment}{10}{subsection.2.6.3}%
+\contentsline {subsection}{\numberline {2.6.4}Open Source Contributions}{10}{subsection.2.6.4}%
+\contentsline {section}{\numberline {2.7}Starting Point}{10}{section.2.7}%
+\contentsline {chapter}{\numberline {3}Implementation}{11}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Base RISC-V to SMT Semantics}{11}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Converting MLIR Types}{11}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Handling diffrent Instruction Types}{11}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Exploiting identical semantics}{13}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {3.1.4}Leveraging xdsl-smt}{14}{subsection.3.1.4}%
+\contentsline {section}{\numberline {3.2}SMT to Lean4}{14}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Bitvector Operations}{14}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Generating theorems with bv\_decide}{14}{subsection.3.2.2}%
+\contentsline {section}{\numberline {3.3}RISC-V Enumeration}{14}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}RISC-V in IRDL}{15}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Synthetic Operations}{15}{subsection.3.3.2}%
+\contentsline {section}{\numberline {3.4}Backend Synthesis}{15}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Refinements}{15}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Multithreaded Iterative Deepening}{15}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Conversion to PDL}{16}{subsection.3.4.3}%
+\contentsline {section}{\numberline {3.5}Pruning the searchspace}{16}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Repository Overview}{16}{section.3.6}%
+\contentsline {chapter}{\numberline {4}Evaluation}{17}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Correctness}{17}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Semantics correctness}{17}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}PDL Transformations}{17}{subsection.4.1.2}%
+\contentsline {section}{\numberline {4.2}Synthesis duration analysis}{17}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Choosing Refinements}{17}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Effects of TBD optimization}{17}{subsection.4.2.2}%
+\contentsline {section}{\numberline {4.3}Coverage of LLVM IR instructions}{17}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Base RISC-V instruction set}{17}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Bit Manipulation Extension}{17}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Multiplication and Division Extension}{17}{subsection.4.3.3}%
+\contentsline {section}{\numberline {4.4}Performance against LLVM}{17}{section.4.4}%
+\contentsline {chapter}{\numberline {5}Conclusion}{18}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Work Completed}{18}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Synthesized large chunk of LLVM to RISC-V Backend}{18}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Examined optimizations techniques for backend synthesis}{18}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Novel Contribution}{18}{subsection.5.1.3}%
+\contentsline {section}{\numberline {5.2}Future Work}{18}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Reflections}{18}{section.5.3}%
+\contentsline {chapter}{\numberline {A}Additional details}{19}{appendix.A}%

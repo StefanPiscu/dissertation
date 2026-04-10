@@ -1,0 +1,6 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k}{let}\PYG{+w}{ }\PYG{n}{a0}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{Bool}\PYG{+w}{ }\PYG{o}{:=}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{BitVec.slt}\PYG{+w}{ }\PYG{n}{arg1}\PYG{+w}{ }\PYG{n}{arg0}\PYG{o}{)}\PYG{+w}{ }\PYG{n+nb+bp}{;}
+\PYG{k}{let}\PYG{+w}{ }\PYG{n}{a1}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{BitVec}\PYG{+w}{ }\PYG{l+m+mi}{64}\PYG{+w}{ }\PYG{o}{:=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{+w}{ }\PYG{n+nb+bp}{;}
+\PYG{k}{let}\PYG{+w}{ }\PYG{n}{a2}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{BitVec}\PYG{+w}{ }\PYG{l+m+mi}{64}\PYG{+w}{ }\PYG{o}{:=}\PYG{+w}{ }\PYG{l+m+mi}{1}\PYG{+w}{ }\PYG{n+nb+bp}{;}
+\PYG{k}{let}\PYG{+w}{ }\PYG{n}{a3}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{BitVec}\PYG{+w}{ }\PYG{l+m+mi}{64}\PYG{+w}{ }\PYG{o}{:=}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{cond}\PYG{+w}{ }\PYG{n}{a0}\PYG{+w}{ }\PYG{n}{a2}\PYG{+w}{ }\PYG{n}{a1}\PYG{o}{)}\PYG{+w}{ }\PYG{n+nb+bp}{;}
+\end{MintedVerbatim}

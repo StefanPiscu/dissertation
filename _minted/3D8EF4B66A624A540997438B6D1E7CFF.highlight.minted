@@ -1,0 +1,6 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kd}{theorem}\PYG{+w}{ }\PYG{n}{slt\PYGZus{}eq}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{a0}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{BitVec}\PYG{+w}{ }\PYG{l+m+mi}{64}\PYG{o}{)}\PYG{+w}{ }\PYG{o}{(}\PYG{n}{a1}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{BitVec}\PYG{+w}{ }\PYG{l+m+mi}{64}\PYG{o}{)}
+\PYG{+w}{    }\PYG{o}{:}\PYG{+w}{ }\PYG{n}{RV64.slt}\PYG{+w}{ }\PYG{n}{a0}\PYG{+w}{ }\PYG{n}{a1}\PYG{+w}{ }\PYG{n+nb+bp}{=}\PYG{+w}{ }\PYG{n}{\PYGZus{}slt}\PYG{+w}{ }\PYG{n}{a0}\PYG{+w}{ }\PYG{n}{a1}\PYG{+w}{ }\PYG{o}{:=}\PYG{+w}{ }\PYG{k+kd}{by}
+\PYG{+w}{  }\PYG{n}{fold}\PYG{+w}{ }\PYG{o}{[}\PYG{n}{RV64.slt}\PYG{o}{,}\PYG{+w}{ }\PYG{n}{\PYGZus{}slt}\PYG{o}{]}
+\PYG{+w}{  }\PYG{n}{bv\PYGZus{}decide}
+\end{MintedVerbatim}

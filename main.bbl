@@ -1,0 +1,512 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global/global}
+    \entry{sail-paper}{article}{}{}
+      \name{author}{14}{}{%
+        {{hash=ebc4d9aeb1bd2a61d916e5e47ff47c96}{%
+           family={Armstrong},
+           familyi={A\bibinitperiod},
+           given={Alasdair},
+           giveni={A\bibinitperiod}}}%
+        {{hash=057a9ba35dcabe9b7b84bc7b06eca5b0}{%
+           family={Bauereiss},
+           familyi={B\bibinitperiod},
+           given={Thomas},
+           giveni={T\bibinitperiod}}}%
+        {{hash=c3a5019aee084bfff02cd2a5cb7d7c70}{%
+           family={Campbell},
+           familyi={C\bibinitperiod},
+           given={Brian},
+           giveni={B\bibinitperiod}}}%
+        {{hash=bc31f255c8c6dfa0447da6848a3bdddf}{%
+           family={Reid},
+           familyi={R\bibinitperiod},
+           given={Alastair},
+           giveni={A\bibinitperiod}}}%
+        {{hash=fbceee1bb8cdbe9679aa2711209bc7c7}{%
+           family={Gray},
+           familyi={G\bibinitperiod},
+           given={Kathryn\bibnamedelima E.},
+           giveni={K\bibinitperiod\bibinitdelim E\bibinitperiod}}}%
+        {{hash=9951b6d0be575d99303cbc10a55329c9}{%
+           family={Norton},
+           familyi={N\bibinitperiod},
+           given={Robert\bibnamedelima M.},
+           giveni={R\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=03a4ac11aa58ca4caa0b4993c983cd42}{%
+           family={Mundkur},
+           familyi={M\bibinitperiod},
+           given={Prashanth},
+           giveni={P\bibinitperiod}}}%
+        {{hash=274e644932ab606d9597a5fbdd5950ba}{%
+           family={Wassell},
+           familyi={W\bibinitperiod},
+           given={Mark},
+           giveni={M\bibinitperiod}}}%
+        {{hash=4b92426191155b0f0ac952b8f0459810}{%
+           family={French},
+           familyi={F\bibinitperiod},
+           given={Jon},
+           giveni={J\bibinitperiod}}}%
+        {{hash=54c9916745c5072eb31b390ff1e7cecf}{%
+           family={Pulte},
+           familyi={P\bibinitperiod},
+           given={Christopher},
+           giveni={C\bibinitperiod}}}%
+        {{hash=b63998d5ec15e70377b38cb4f4b1fd25}{%
+           family={Flur},
+           familyi={F\bibinitperiod},
+           given={Shaked},
+           giveni={S\bibinitperiod}}}%
+        {{hash=6979ea50787d599b052d4760e26e7cef}{%
+           family={Stark},
+           familyi={S\bibinitperiod},
+           given={Ian},
+           giveni={I\bibinitperiod}}}%
+        {{hash=0db8fd853ecaf02ae0100d840b9302a3}{%
+           family={Krishnaswami},
+           familyi={K\bibinitperiod},
+           given={Neel},
+           giveni={N\bibinitperiod}}}%
+        {{hash=36aa14ea12e51326290dd02c24f754c2}{%
+           family={Sewell},
+           familyi={S\bibinitperiod},
+           given={Peter},
+           giveni={P\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {New York, NY, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{ef57b69b174c9c8bb2f21aafa311c90f}
+      \strng{fullhash}{af1a310de116821eb56d4d6ca7d83022}
+      \strng{fullhashraw}{af1a310de116821eb56d4d6ca7d83022}
+      \strng{bibnamehash}{ef57b69b174c9c8bb2f21aafa311c90f}
+      \strng{authorbibnamehash}{ef57b69b174c9c8bb2f21aafa311c90f}
+      \strng{authornamehash}{ef57b69b174c9c8bb2f21aafa311c90f}
+      \strng{authorfullhash}{af1a310de116821eb56d4d6ca7d83022}
+      \strng{authorfullhashraw}{af1a310de116821eb56d4d6ca7d83022}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Architecture specifications notionally define the fundamental interface between hardware and software: the envelope of allowed behaviour for processor implementations, and the basic assumptions for software development and verification. But in practice, they are typically prose and pseudocode documents, not rigorous or executable artifacts, leaving software and verification on shaky ground. In this paper, we present rigorous semantic models for the sequential behaviour of large parts of the mainstream ARMv8-A, RISC-V, and MIPS architectures, and the research CHERI-MIPS architecture, that are complete enough to boot operating systems, variously Linux, FreeBSD, or seL4. Our ARMv8-A models are automatically translated from authoritative ARM-internal definitions, and (in one variant) tested against the ARM Architecture Validation Suite. We do this using a custom language for ISA semantics, Sail, with a lightweight dependent type system, that supports automatic generation of emulator code in C and OCaml, and automatic generation of proof-assistant definitions for Isabelle, HOL4, and (currently only for MIPS) Coq. We use the former for validation, and to assess specification coverage. To demonstrate the usability of the latter, we prove (in Isabelle) correctness of a purely functional characterisation of ARMv8-A address translation. We moreover integrate the RISC-V model into the RMEM tool for (user-mode) relaxed-memory concurrency exploration. We prove (on paper) the soundness of the core Sail type system. We thereby take a big step towards making the architectural abstraction actually well-defined, establishing foundations for verification and reasoning.}
+      \field{journaltitle}{Proc. ACM Program. Lang.}
+      \field{month}{1}
+      \field{number}{POPL}
+      \field{title}{ISA semantics for ARMv8-a, RISC-v, and CHERI-MIPS}
+      \field{volume}{3}
+      \field{year}{2019}
+      \verb{doi}
+      \verb 10.1145/3290384
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/3290384
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/3290384
+      \endverb
+      \keyw{Instruction Set Architectures,Semantics,Theorem Proving}
+    \endentry
+    \entry{smt-mlir}{article}{}{}
+      \name{author}{5}{}{%
+        {{hash=385ace4971afcf156f01f8044e750b1c}{%
+           family={Fehr},
+           familyi={F\bibinitperiod},
+           given={Mathieu},
+           giveni={M\bibinitperiod}}}%
+        {{hash=683b48fb934b0f2b243f7b5a31782c1b}{%
+           family={Fan},
+           familyi={F\bibinitperiod},
+           given={Yuyou},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=ad167c31946704f26562ef6cd36e47b3}{%
+           family={Pompougnac},
+           familyi={P\bibinitperiod},
+           given={Hugo},
+           giveni={H\bibinitperiod}}}%
+        {{hash=43d6b8ac43fd2f45f710ff8a73b2c942}{%
+           family={Regehr},
+           familyi={R\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+        {{hash=8d5b5e98a55e4f5262f328dd602a741d}{%
+           family={Grosser},
+           familyi={G\bibinitperiod},
+           given={Tobias},
+           giveni={T\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {New York, NY, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{fullhash}{6962bc665baf32774c8717a6188cc0bd}
+      \strng{fullhashraw}{6962bc665baf32774c8717a6188cc0bd}
+      \strng{bibnamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authorbibnamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authornamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authorfullhash}{6962bc665baf32774c8717a6188cc0bd}
+      \strng{authorfullhashraw}{6962bc665baf32774c8717a6188cc0bd}
+      \field{extraname}{1}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{MLIR is a toolkit supporting the development of extensible and composable intermediate representations (IRs) called dialects; it was created in response to rapid changes in hardware platforms, programming languages, and application domains such as machine learning. MLIR supports development teams creating compilers and compiler-adjacent tools by factoring out common infrastructure such as parsers and printers. A major limitation of MLIR is that it is syntax-focused: it has no support for directly encoding the semantics of operations in its dialects. Thus, at present, the parts of MLIR tools that depend on semantics—optimizers, analyzers, verifiers, transformers—must all be engineered by hand. Our work makes formal semantics a first-class citizen in the MLIR ecosystem. We designed and implemented a collection of semantics-supporting MLIR dialects for encoding the semantics of compiler IRs. These dialects support a separation of concerns between three domains of expertise when building formal-methods-based tooling for compilers. First, compiler developers define their dialect’s semantics as a lowering (compilation transformation) from their dialect to one or more of ours. Second, SMT solver experts provide tools to optimize domain-specific high-level semantics and lower them to SMT queries. Third, tool builders create dialect-independent verification tools. We validate our work by defining semantics for five key MLIR dialects, defining a state-of-the-art SMT encoding for memory-based semantics, and building three dialect-agnostic tools, which we used to find five miscompilation bugs in upstream MLIR, verify a canonicalization pass, and also formally verify transfer functions for two dataflow analyses: “known bits” (that finds individual bits that are always zero or one in all executions) and “demanded bits” (that finds don’t-care bits). The transfer functions that we verify are improved versions of those in upstream MLIR; they detect on average 36.6\% more known bits in real-world MLIR programs compared to the upstream implementation.}
+      \field{journaltitle}{Proc. ACM Program. Lang.}
+      \field{month}{6}
+      \field{number}{PLDI}
+      \field{title}{First-Class Verification Dialects for MLIR}
+      \field{volume}{9}
+      \field{year}{2025}
+      \verb{doi}
+      \verb 10.1145/3729309
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/3729309
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/3729309
+      \endverb
+      \keyw{compilers,intermediate representations,verification}
+    \endentry
+    \entry{irdl}{inproceedings}{}{}
+      \name{author}{6}{}{%
+        {{hash=385ace4971afcf156f01f8044e750b1c}{%
+           family={Fehr},
+           familyi={F\bibinitperiod},
+           given={Mathieu},
+           giveni={M\bibinitperiod}}}%
+        {{hash=d676380ca52324efd8d32dcfa05677a1}{%
+           family={Niu},
+           familyi={N\bibinitperiod},
+           given={Jeff},
+           giveni={J\bibinitperiod}}}%
+        {{hash=22b8268ddc68fbfe733d278d847a1c8e}{%
+           family={Riddle},
+           familyi={R\bibinitperiod},
+           given={River},
+           giveni={R\bibinitperiod}}}%
+        {{hash=a348049bbee83ce5dc3444b952a2e4e0}{%
+           family={Amini},
+           familyi={A\bibinitperiod},
+           given={Mehdi},
+           giveni={M\bibinitperiod}}}%
+        {{hash=3995a0c731177d2aa23cbb3a6126be27}{%
+           family={Su},
+           familyi={S\bibinitperiod},
+           given={Zhendong},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=8d5b5e98a55e4f5262f328dd602a741d}{%
+           family={Grosser},
+           familyi={G\bibinitperiod},
+           given={Tobias},
+           giveni={T\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {San Diego, CA, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{fullhash}{476a05f012b624de01c89e98c81e157d}
+      \strng{fullhashraw}{476a05f012b624de01c89e98c81e157d}
+      \strng{bibnamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authorbibnamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authornamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authorfullhash}{476a05f012b624de01c89e98c81e157d}
+      \strng{authorfullhashraw}{476a05f012b624de01c89e98c81e157d}
+      \field{extraname}{2}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Designing compiler intermediate representations (IRs) is often a manual process that makes exploration and innovation in this space costly. Developers typically use general-purpose programming languages to design IRs. As a result, IR implementations are verbose, manual modifications are expensive, and designing tooling for the inspection or generation of IRs is impractical. While compilers relied historically on a few slowly evolving IRs, domain-specific optimizations and specialized hardware motivate compilers to use and evolve many IRs. We facilitate the implementation of SSA-based IRs by introducing IRDL, a domain-specific language to define IRs. We analyze all 28 domain-specific IRs developed as part of LLVM's MLIR project over the last two years and demonstrate how to express these IRs exclusively in IRDL while only rarely falling back to IRDL's support for generic C++ extensions. By enabling the concise and explicit specification of IRs, we provide foundations for developing effective tooling to automate the compiler construction process.}
+      \field{booktitle}{Proceedings of the 43rd ACM SIGPLAN International Conference on Programming Language Design and Implementation}
+      \field{isbn}{9781450392655}
+      \field{series}{PLDI 2022}
+      \field{title}{IRDL: an IR definition language for SSA compilers}
+      \field{year}{2022}
+      \field{pages}{199\bibrangedash 212}
+      \range{pages}{14}
+      \verb{doi}
+      \verb 10.1145/3519939.3523700
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/3519939.3523700
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/3519939.3523700
+      \endverb
+      \keyw{Compilers,Intermediate Representation,MLIR}
+    \endentry
+    \entry{xdsl}{inproceedings}{}{}
+      \name{author}{9}{}{%
+        {{hash=385ace4971afcf156f01f8044e750b1c}{%
+           family={Fehr},
+           familyi={F\bibinitperiod},
+           given={Mathieu},
+           giveni={M\bibinitperiod}}}%
+        {{hash=d05abf1309f81f28117c976c43db0a41}{%
+           family={Weber},
+           familyi={W\bibinitperiod},
+           given={Michel},
+           giveni={M\bibinitperiod}}}%
+        {{hash=1d1125f57a699514480a25c53f3b85d1}{%
+           family={Ulmann},
+           familyi={U\bibinitperiod},
+           given={Christian},
+           giveni={C\bibinitperiod}}}%
+        {{hash=51caaa1006aeb7388d4acea040699229}{%
+           family={Lopoukhine},
+           familyi={L\bibinitperiod},
+           given={Alexandre},
+           giveni={A\bibinitperiod}}}%
+        {{hash=ebe476d62f5108e18a5cc576d1805f14}{%
+           family={Lücke},
+           familyi={L\bibinitperiod},
+           given={Martin\bibnamedelima Paul},
+           giveni={M\bibinitperiod\bibinitdelim P\bibinitperiod}}}%
+        {{hash=b7e94f8e5e8a7f305426bc5b07898bc0}{%
+           family={Degioanni},
+           familyi={D\bibinitperiod},
+           given={Théo},
+           giveni={T\bibinitperiod}}}%
+        {{hash=58edd4d2dfb024883f6e84560dc27098}{%
+           family={Vasiladiotis},
+           familyi={V\bibinitperiod},
+           given={Christos},
+           giveni={C\bibinitperiod}}}%
+        {{hash=187269ddb4a287b49f62f0c4a3c57bd0}{%
+           family={Steuwer},
+           familyi={S\bibinitperiod},
+           given={Michel},
+           giveni={M\bibinitperiod}}}%
+        {{hash=8d5b5e98a55e4f5262f328dd602a741d}{%
+           family={Grosser},
+           familyi={G\bibinitperiod},
+           given={Tobias},
+           giveni={T\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Las Vegas, NV, USA}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{fullhash}{afcd4402de9400c46a38e0f64d168fce}
+      \strng{fullhashraw}{afcd4402de9400c46a38e0f64d168fce}
+      \strng{bibnamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authorbibnamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authornamehash}{a6fe09a94b185e40c5cec833726de2ec}
+      \strng{authorfullhash}{afcd4402de9400c46a38e0f64d168fce}
+      \strng{authorfullhashraw}{afcd4402de9400c46a38e0f64d168fce}
+      \field{extraname}{3}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Traditionally, compiler researchers either conduct experiments within an existing production compiler or develop their own prototype compiler; both options come with trade-offs. On one hand, prototyping in a production compiler can be cumbersome, as they are often optimized for program compilation speed at the expense of software simplicity and development speed. On the other hand, the transition from a prototype compiler to production requires significant engineering work. To bridge this gap, we introduce the concept of sidekick compiler frameworks, an approach that uses multiple frameworks that interoperate with each other by leveraging textual interchange formats and declarative descriptions of abstractions. Each such compiler framework is specialized for specific use cases, such as performance or prototyping. Abstractions are by design shared across frameworks, simplifying the transition from prototyping to production. We demonstrate this idea with xDSL, a sidekick for MLIR focused on prototyping and teaching. xDSL interoperates with MLIR through a shared textual IR and the exchange of IRs through an IR Definition Language. The benefits of sidekick compiler frameworks are evaluated by showing on three use cases how xDSL impacts their development: teaching, DSL compilation, and rewrite system prototyping. We also investigate the trade-offs that xDSL offers, and demonstrate how we simplify the transition between frameworks using the IRDL dialect. With sidekick compilation, we envision a future in which engineers minimize the cost of development by choosing a framework built for their immediate needs, and later transitioning to production with minimal overhead.}
+      \field{booktitle}{Proceedings of the 23rd ACM/IEEE International Symposium on Code Generation and Optimization}
+      \field{isbn}{9798400712753}
+      \field{series}{CGO '25}
+      \field{title}{xDSL: Sidekick Compilation for SSA-Based Compilers}
+      \field{year}{2025}
+      \field{pages}{179\bibrangedash 192}
+      \range{pages}{14}
+      \verb{doi}
+      \verb 10.1145/3696443.3708945
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/3696443.3708945
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/3696443.3708945
+      \endverb
+      \keyw{compilation frameworks,interchange formats,intermediate representations}
+    \endentry
+    \entry{gnu-superopt}{misc}{}{}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.gnu.org/software/superopt/}}
+      \field{note}{Accessed: 2026-03-17}
+      \field{title}{GNU Superoptimizer}
+    \endentry
+    \entry{mlir-fuzz}{misc}{}{}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://github.com/opencompl/mlir-fuzz}}
+      \field{note}{Accessed: 2026-03-17}
+      \field{title}{GNU Superoptimizer}
+    \endentry
+    \entry{riscv-lean}{misc}{}{}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://github.com/opencompl/riscv-lean}}
+      \field{note}{Accessed: 2026-03-30}
+      \field{title}{GNU Superoptimizer}
+    \endentry
+    \entry{xdsl-smt}{misc}{}{}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://github.com/opencompl/xdsl-smt}}
+      \field{note}{Accessed: 2026-03-30}
+      \field{title}{GNU Superoptimizer}
+    \endentry
+    \entry{souper}{misc}{}{}
+      \name{author}{7}{}{%
+        {{hash=3facdc2665f6ec4072ea42deea32420b}{%
+           family={Sasnauskas},
+           familyi={S\bibinitperiod},
+           given={Raimondas},
+           giveni={R\bibinitperiod}}}%
+        {{hash=f532a47a63f16b583c4455dea6a8018e}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Yang},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=0848389610ed2d22f2a1789601120568}{%
+           family={Collingbourne},
+           familyi={C\bibinitperiod},
+           given={Peter},
+           giveni={P\bibinitperiod}}}%
+        {{hash=d0215058202698be7f370b7de62b4400}{%
+           family={Ketema},
+           familyi={K\bibinitperiod},
+           given={Jeroen},
+           giveni={J\bibinitperiod}}}%
+        {{hash=726d7a928a1153b6ab47634c4aafc5b3}{%
+           family={Lup},
+           familyi={L\bibinitperiod},
+           given={Gratian},
+           giveni={G\bibinitperiod}}}%
+        {{hash=e3a69766f80cc19e28fd395db434a742}{%
+           family={Taneja},
+           familyi={T\bibinitperiod},
+           given={Jubi},
+           giveni={J\bibinitperiod}}}%
+        {{hash=43d6b8ac43fd2f45f710ff8a73b2c942}{%
+           family={Regehr},
+           familyi={R\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{6941bf6a1abae3b49f677805948c95cc}
+      \strng{fullhash}{da28c707b18a701bcca348b1cc76b7ee}
+      \strng{fullhashraw}{da28c707b18a701bcca348b1cc76b7ee}
+      \strng{bibnamehash}{6941bf6a1abae3b49f677805948c95cc}
+      \strng{authorbibnamehash}{6941bf6a1abae3b49f677805948c95cc}
+      \strng{authornamehash}{6941bf6a1abae3b49f677805948c95cc}
+      \strng{authorfullhash}{da28c707b18a701bcca348b1cc76b7ee}
+      \strng{authorfullhashraw}{da28c707b18a701bcca348b1cc76b7ee}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.PL}
+      \field{eprinttype}{arXiv}
+      \field{title}{Souper: A Synthesizing Superoptimizer}
+      \field{year}{2018}
+      \verb{eprint}
+      \verb 1711.04422
+      \endverb
+      \verb{urlraw}
+      \verb https://arxiv.org/abs/1711.04422
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/abs/1711.04422
+      \endverb
+    \endentry
+    \entry{compiler-bugs}{inproceedings}{}{}
+      \name{author}{4}{}{%
+        {{hash=a2e52c42defe77d23dfa48ccf704ae63}{%
+           family={Sun},
+           familyi={S\bibinitperiod},
+           given={Chengnian},
+           giveni={C\bibinitperiod}}}%
+        {{hash=5e7085759c6ac541fc57fea127f760e8}{%
+           family={Le},
+           familyi={L\bibinitperiod},
+           given={Vu},
+           giveni={V\bibinitperiod}}}%
+        {{hash=abeb184af1d5c44d14c89f229122f9d8}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Qirun},
+           giveni={Q\bibinitperiod}}}%
+        {{hash=3995a0c731177d2aa23cbb3a6126be27}{%
+           family={Su},
+           familyi={S\bibinitperiod},
+           given={Zhendong},
+           giveni={Z\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Saarbrücken, Germany}%
+      }
+      \list{publisher}{1}{%
+        {Association for Computing Machinery}%
+      }
+      \strng{namehash}{d5592c1f9d94efd6555a8ac252b5dd77}
+      \strng{fullhash}{3e4b3ae0631803a0d6af45bfc95d1012}
+      \strng{fullhashraw}{3e4b3ae0631803a0d6af45bfc95d1012}
+      \strng{bibnamehash}{d5592c1f9d94efd6555a8ac252b5dd77}
+      \strng{authorbibnamehash}{d5592c1f9d94efd6555a8ac252b5dd77}
+      \strng{authornamehash}{d5592c1f9d94efd6555a8ac252b5dd77}
+      \strng{authorfullhash}{3e4b3ae0631803a0d6af45bfc95d1012}
+      \strng{authorfullhashraw}{3e4b3ae0631803a0d6af45bfc95d1012}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Compilers are critical, widely-used complex software. Bugs in them have significant impact, and can cause serious damage when they silently miscompile a safety-critical application. An in-depth understanding of compiler bugs can help detect and fix them. To this end, we conduct the first empirical study on the characteristics of the bugs in two main-stream compilers, GCC and LLVM. Our study is significant in scale — it exhaustively examines about 50K bugs and 30K bug fix revisions over more than a decade’s span. This paper details our systematic study. Summary findings include: (1) In both compilers, C++ is the most buggy component, accounting for around 20\% of the total bugs and twice as many as the second most buggy component; (2) the bug revealing test cases are typically small, with 80\% having fewer than 45 lines of code; (3) most of the bug fixes touch a single source file with small modifications (43 lines for GCC and 38 for LLVM on average); (4) the average lifetime of GCC bugs is 200 days, and 111 days for LLVM; and (5) high priority tends to be assigned to optimizer bugs, most notably 30\% of the bugs in GCC’s inter-procedural analysis component are labeled P1 (the highest priority). This study deepens our understanding of compiler bugs. For application developers, it shows that even mature production compilers still have many bugs, which may affect development. For researchers and compiler developers, it sheds light on interesting characteristics of compiler bugs, and highlights challenges and opportunities to more effectively test and debug compilers.}
+      \field{booktitle}{Proceedings of the 25th International Symposium on Software Testing and Analysis}
+      \field{isbn}{9781450343909}
+      \field{series}{ISSTA 2016}
+      \field{title}{Toward understanding compiler bugs in GCC and LLVM}
+      \field{year}{2016}
+      \field{pages}{294\bibrangedash 305}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1145/2931037.2931074
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1145/2931037.2931074
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1145/2931037.2931074
+      \endverb
+      \keyw{compiler bugs,compiler testing,empirical studies}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+
