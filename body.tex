@@ -83,44 +83,63 @@ Souper \cite{souper}.
 \label{ch:prep}
 \section{MLIR}
 
-\fehr{Mention that MLIR is a compiler, otherwise it is unclear from this paragraph what MLIR is.}
-\fehr{Mention where MLIR come from? The LLVM project. Who uses it maybe?}
-MLIR (Multi-Level Intermediate Representation) is an extensible framework that allows
-users to define extensible and composable IRs called dialects. These dialects leverage
-SSA (Static Single Assignment) form, where each program is made out of operations, 
-each with some number of operands and results. MLIR operations also have attributes,
-which are bits of data that are part of the program (i.e the values of constants) that
-are stored as a name to value dictionary.
-\fehr{Attributes are static data unlike values.}
+%\fehr{Mention that MLIR is a compiler, otherwise it is unclear from this paragraph what MLIR is.}
+%\fehr{Mention where MLIR come from? The LLVM project. Who uses it maybe?}
+%\fehr{Attributes are static data unlike values.}
+%\fehr{Maybe make this paragraph about SSA, and not mention SSA before?}
+%\fehr{Overall, I think you can explain more what the components of an MLIR operation are,
+%for instance showing at least an example?}.
 
-\fehr{Maybe make this paragraph about SSA, and not mention SSA before?}
-In order to make dataflow information explicit, the IRs enforce static single assignment
-so each operation's results are assigned to unique values.
-\fehr{Overall, I think you can explain more what the components of an MLIR operation are,
-for instance showing at least an example?}
+MLIR (Multi-Level Intermediate Representation) is an extensible compiler framework that allows
+users to define IRs named dialects. Developed as a sub-project of LLVM it aims to facilitate the 
+construction of domain specific compilers and improve compilation for heterogeneous computing. 
+One feature worth highlighting is the iteroperability of dialects, allowing any dialect to be
+used within any MLIR program.
+
+
+Programs enforce static single assignment in order to make dataflow information explicit. That is,
+each value is defined exactly once before it is used.
+Programs are made of blocks of operations, which can have a number of operands and attributes. 
+Unlike operands which are SSA values representing the results of other operations, attributes 
+constitute static data. Operations also have types, and are also type checked, ensuring the 
+programs are well formed. In the example below we can see \textcolor{red}{result(s)}, 
+\textcolor{blue}{operation name}, \textcolor{green!50!black}{operands}, \textcolor{orange}{attributes}, 
+as well as \textcolor{teal}{operation type}, and \textcolor{magenta}{result type}
+
+\begin{minted}[escapeinside=||]{text}
+|\textcolor{red}{\texttt{\%res}}| = |\textcolor{blue}{\texttt{"arith.addi"}}|(|\textcolor{green!50!black}{\texttt{\%a, \%b}}|) |\textcolor{orange}{\texttt{\{overflowFlags = 0 : i64\}}}| : |\textcolor{teal}{\texttt{(i32, i32)}}| -> |\textcolor{magenta}{\texttt{i32}}|
+\end{minted}
+
+
 
 \subsection*{xDSL}
 
-\fehr{I think this needs to be expanded, as this is quite short. I am not immediately sure what to say though.
-Maybe that whatever you do in xDSL could also work in MLIR if ported to C++?}
+%\fehr{I think this needs to be expanded, as this is quite short. I am not immediately sure what to say though.
+%Maybe that whatever you do in xDSL could also work in MLIR if ported to C++?}
+
 Troughout the project I will be using the xDSL compiler framework \cite{xdsl} which is 
 interoperable with MLIR, but is written in Python to allow for rapid prototyping. The IR files for
 both xdsl and mlir both use the same format, so existing tools build for MLIR can still be used.
+Moreover, because of the aforementioned interoperability, if the prototype tool has succesful
+results, a performant version can be implemented in C++ within the MLIR ecosystem.
 
 \subsection*{LLVM IR}
 
-\fehr{Maybe explain where LLVM fits in the compilation landscape? Like where it is used, or
-why it is important? I would otherwise expand a bit on this section as well in that direction.}
+%\fehr{Maybe explain where LLVM fits in the compilation landscape? Like where it is used, or
+%why it is important? I would otherwise expand a bit on this section as well in that direction.}
+%\fehr{Note, this is the LLVM dialect in MLIR, so a bit different. Maybe explain how it
+%mimicks LLVM IR in MLIR?}
+
 LLVM set of compiler and toolchains technologies that leverages a language-independent 
-intermediate representation (LLVM IR). It will serve as the source of our backend synthesis
-as it is widely used and would make a great example.
+intermediate representation (LLVM IR), that serves as a portable high level assembly language
+that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust, etc.) 
+have frontends that target LLVM IR. This is why, I've elected to use it the source IR  for this 
+project.
 
-In particular, I will be targeting the arithmetic subset LLVM IR, as these instructions can
-be modeled with bitvector SMT semantics.
-
+In particular, I will be targeting a subset of the LLVM dialect, which mimicks the
+LLVM IR while having access to the suite of tools provided by MLIR and xDSL. I'm focusing on
+the arithmetic subset, as these isntructions can be easily modeled with bitvector SMT semantics.
 Here is an example of a function that checks whether their arguments are equal:
-\fehr{Note, this is the LLVM dialect in MLIR, so a bit different. Maybe explain how it
-mimicks LLVM IR in MLIR?}
 \begin{minted}{mlir}
 func.func @main(%arg0 : i64, %arg1 : i64) -> i1 {
     %0 = llvm.icmp eq, %arg0, %arg1 : i64
@@ -131,13 +150,18 @@ func.func @main(%arg0 : i64, %arg1 : i64) -> i1 {
 
 \subsection*{RISC-V}
 
-\fehr{Explain why RISC-V? (Simple ISA and open source)}
-\fehr{Explain that there is a pre-existing RISC-V dialect in xDSL. Here, starting with
-"Below is an example" doesn't really work because the reader doesn't know what the context
-of this paragraph is.}
-Below is an example of a function written in the RISC-V dialect of xDSL. It's operations
-are equivalent to a RISC-V assembly instructions, but the code is in SSA form.
+%\fehr{Explain why RISC-V? (Simple ISA and open source)}
+%\fehr{Explain that there is a pre-existing RISC-V dialect in xDSL. Here, starting with
+%"Below is an example" doesn't really work because the reader doesn't know what the context
+%of this paragraph is.}
 
+
+RISC-V is a simple open source instruction set architecture, with a variety of extensions.
+I've chosen it as my target for the project due to it's simplicity and extensibility. 
+xDSL has an implementation of a dialect for the RISC-V ISA, which will be used in this project.
+%
+Below is the lowering of the LLVM dialect presented before in this dialect. It's operations
+are equivalent to a RISC-V assembly instructions, but the code is in SSA form.
 We can also refer to specific registers as part of the type attribute, although this
 is unnecesary and better handled by a register allocator.
 
@@ -149,14 +173,15 @@ func.func @main(%arg0 : !riscv.reg, %arg1 : !riscv.reg) -> !riscv.reg {
 }
 \end{minted}
 
-This will be the target of our backend synthesis, as it has a small base instruction set 
-and extensions can be added as the scope of the project grows.
 
 \subsection*{IRDL}
 
 IRDL (IR Definition Language) \cite{irdl} is a dialect that is used to define dialects.
 This is useful to define the structure of our source and target dialect to a fuzzer,
-a tool that will generate programs using the defined operations.
+a tool that will generate programs using the defined operations. A irdl definition looks
+like the following, where operands, and results are given type constrains for the operation
+to satisfy in order to be verified. In the example below we have to operands that must be
+of type \texttt{i64}, and a result of the same type, we also have the operation name \texttt{and}.
 \begin{minted}{mlir}
 // Structure of an llvm.and operation
 irdl.operation @and {
@@ -167,20 +192,19 @@ irdl.operation @and {
 \end{minted}
 \subsection*{PDL}
 
-\fehr{I think this would look better if you merged all these sentences into a single
-paragraph, even without changing any text.}
-\fehr{Mention that PDL is defined in MLIR and xDSL, and that the main point of PDL
-is that we can check if it is correct or not using our tools.}
+%\fehr{I think this would look better if you merged all these sentences into a single
+%paragraph, even without changing any text.}
+%\fehr{Mention that PDL is defined in MLIR and xDSL, and that the main point of PDL
+%is that we can check if it is correct or not using our tools.}
 PDL (Pattern Definition Language) is a dialect used in order to define rewrite
 patterns. Such patterns can be used in order to transform code.
-
+%
 This will be the primary method used to create a backend as PDL patterns can be applied efficiently
-by a generic algorithm. Thus, after obtaining a series of PDL rewrites for our IR, we can convert
-that into a backend.
-
+by a generic algorithm, and can be checked for correctness using the tools that we will develop. 
+After obtaining a series of PDL rewrites for our IR, we can convert that into a lowering.
+%
 For example a the PDL pattern below converts the LLVM IR equality example above into the RISC-V 
 instructions below:
-\clearpage
 \begin{minted}{mlir}
 pdl.pattern : benefit(1) {
   %0 = pdl.type : i64
@@ -204,7 +228,6 @@ pdl.pattern : benefit(1) {
   }
 }
 \end{minted}
-\stefan{Maybe put code examples in an Appendix}
 
 \section{Semantics}
 
@@ -216,16 +239,16 @@ operations so bitvector theory seems like a natural choice.
 
 \subsection{SMT dialect}
 
-\fehr{This kind of introduction is much better than the previous ones, where you explain the
-dialect you are using, and why this dialect is useful (for instance SMT solvers here).}
+%\fehr{This kind of introduction is much better than the previous ones, where you explain the
+%dialect you are using, and why this dialect is useful (for instance SMT solvers here).}
 In order to remain within the confines of MLIR, we leverage the specialized SMT dialect 
 \cite{smt-mlir} to define the semantics of our IR instructions. This dialect can be 
 easily converted to SMT-Lib, a format that is widely used by many SMT solvers. Moreover
-we can use xdsl infrastructure to aid with parsing, printing and introspection. 
+we can use xDSL infrastructure to aid with parsing, printing and introspection. 
 
-\stefan{Should I mention effect state?}
-\fehr{No need to talk about the effect state since RISC-V doesn't need it.}
-Below is an example of the semantics of the \texttt{riscv.sltw} instruction:
+Below is an example of the semantics of the \texttt{riscv.sltw} instruction. The more complex
+behaviour of the instruction (which isn't really relevant for this example) gets broken down 
+into simpler primitives which a SMT solver can work with.
 \begin{minted}{mlir}
 %0 = "smt.bv.extract"(%arg0) {start = #builtin.int<0>, end = #builtin.int<31>} 
     : (!smt.bv<64>) -> !smt.bv<32>
@@ -236,48 +259,62 @@ Below is an example of the semantics of the \texttt{riscv.sltw} instruction:
 %4 = "smt.bv.sign_extend"(%3) : (!smt.bv<32>) -> !smt.bv<64>
 \end{minted}
 
-\subsection{Translation Validation}
-\fehr{I would not write things like "the best part about ..." in an academic setting,
-because you don't have any evidence to back this claim (which cannot be evidenced
-anyway).}
-\fehr{Actually, we are not using translation validation. We are just verifying that
-the rewrites are correct, which is stronger than translation valiadation.}
-\fehr{I would also move that at the end of the section.}
-As mentioned, the best part about using SMT semantics is leveraging SMT solvers to 
-prove things about different expressions. The primary use case for our purpose is
-proving the fact that our output program is a refinement of our input program. 
-equivalent program is found, we can stop enumerating. This also gives confidence in
-the correctness of our lowering, as the SMT solver ensures that the translation is
-valid for all inputs.
-
-Moreover having access to a translation validation tool for our dialects enables
-other benefits like verifying peephole rewrites \cite{smt-mlir}.
-
-\subsection{Poison}
-
-\fehr{I would maybe merge this subsection with `Refinements', as this is the only
-case of refinement we are using. That way, you can directly explain why poison is
-useful (i.e., defining a notion of undefined behavior so that we can optimize more things.)}
-LLVM IR semantics has special treatement for undefined behaviour and certain operations.
-In particular we care about poison, which can appear as the results of some operations 
-``failing''. For example, when addition overflows the result of the addition is marked 
-as poison rather than any particular value. This allows for optimizations to happen
-by treating the poisoned operands as the most convenient values.
-
 \subsection{Refinements}
 
-As mentioned above, we want our target program to be a \emph{refinement} of our source.
-A program is a \emph{refinement} of another if the following proposition holds:
+Dialects don't always work on the same types of values (RISC-V dialect uses registers, and LLVM IR 
+uses integers), checking if a lowering is ``correct'' isn't as easy as saying that for all inputs
+the programs yield the same outputs. In fact we need to introduce the following \emph{refinement}
+relation. A program is a \emph{refinement} of another if the following proposition holds:
 \begin{equation*}
 \text{\emph{target inputs refine the source inputs}} \implies \text{\emph{target outputs refine the source outputs}}
 \end{equation*}
 
-What does it mean for a value to refine another? This is up to the implementation, however
-a clear example arises when considering poison. Any value \emph{refines} poison.
+This way we can meanigfully talk about such lowerings. Notice that what it means for a value to 
+\emph{refine} another is up to the implementation, however a clear example arises when considering 
+poison in LLVM. Poison is a form of undefined behaviour that propagates, i.e. if any of the operands
+of an operation are posion, than so is the result, while some operations generate poison (like an 
+overflowing integer addition). This is useful because it can be used to optimize certain code sequences,
+as we can always assume that poisoned values are convenable for optimization, since they are the
+result of undefined behaviour. Looking at the following example, which checks if $x+1 > x$:
 
-An interesting case is refinements from integers of different bit widths to 64-bit 
-registers. There are multiple valid ways to define the `refinement' relation that leads
-to different optimizations.
+\begin{minted}{mlir}
+llvm.func @f(%x: i32) -> i1 {
+  %one = llvm.mlir.constant(1 : i32) : i32
+  %add = "llvm.add"(%x, %one) {overflowFlags = #llvm.overflow<nsw>} 
+      : (i32, i32) -> i32
+  %cmp = llvm.icmp "sgt" %add, %x : i32
+  llvm.return %cmp : i1
+}
+\end{minted}
+
+Because of poison, this code can be optimized to, as we can ignore the undefined behaviour that
+arises when $x = \texttt{INT\_MAX}$ by simply asserting that the poisoned value is \texttt{true}:
+\begin{minted}{mlir}
+llvm.func @f(%x: i32) -> i1 {
+  %one = llvm.mlir.constant(1 : i1) : i1
+  llvm.return %one : i1
+}
+\end{minted}
+
+We can now see an useful refinement for poison: Any value \emph{refines} poison.
+
+
+
+\subsection{Verifying rewrites}
+%\fehr{I would not write things like "the best part about ..." in an academic setting,
+%because you don't have any evidence to back this claim (which cannot be evidenced
+%anyway).}
+%\fehr{Actually, we are not using translation validation. We are just verifying that
+%the rewrites are correct, which is stronger than translation valiadation.}
+%\fehr{I would also move that at the end of the section.}
+One benefit of having access to SMT semantics for our dialect is leveraging SMT solvers to 
+prove properties about different expressions. For our purposes we prove that our output program 
+is a refinement of our input program. So we can exhaustively search the program space until
+an equivalent program is found. This also gives us confidence in the correctness of our lowering,
+as the SMT solver ensures that the translation is valid for all inputs.
+%
+There are more benefits of having such semantics, as presented in \cite{smt-mlir}, however these
+aren't the focus of the project.
 \section{Superoptimization}
 \fehr{We should probably not call this section "Superoptimization", as we are just
 using these things for backend synthesis.}
@@ -667,12 +704,15 @@ such expressions.
 
 \section{SMT to Lean4}
 
-Next up, implement printer from smt dialect to risc-v.
+In order to ensure the correctness of our semantics we programatically create lean4 theorems
+to formally prove the equivalence of our semantics to those we consider a source of truth, which
+are already written in lean.
 
-Create a mock risc-v operation and place it inside a block, with block arguments as 
-the arguments of the desired lean function.
+First we encode our risc-v instructions into mlir blocks, with the arguments being the registers
+and immediates used by the instruction. We then write a lowering from such a block into lean,
+since lean isn't an mlir dialect we cannot use xdsl to our advantage when outputing lean code,
+so we also need to write working formatting for our lean functions and theorems.
 
-Lower the block, using the priorly defined semantics.
 
 \subsection{Bitvector Operations}
 
