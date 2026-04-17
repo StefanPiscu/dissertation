@@ -378,54 +378,10 @@ Lean is a proof assistant which is used to obtain machine verified theorems. In 
 a satisfactory level of correctness for our semantics we require Lean theorems that prove the
 equivalences between our established RISC-V semantics and those we deem correct. 
 
-\subsection{Proofs of Equivalence}
+To achieve this we built tools to convert between SMT dialect semantics and bitblastable lean 
+functions we we then used to write the desired proofs. This gives us great confidence in the 
+correctness of our semantics which we use as part of our lowering synthesis process.
 
-We first obtain Lean functions that are representative of our RISC-V semantics, and we use them
-as part of our equivalence theorems. We achieve this by first lowering the RISC-V operation to 
-the SMT dialect, and them converting the SMT code to Lean, like in the following example:
-The risc-v instruction:
-\begin{minted}{mlir}
-%0 = riscv.slt %arg0, %arg1 : (!riscv.reg, !riscv.reg) -> !riscv.reg 
-\end{minted}
-
-Which gets lowered to semantics:
-\begin{minted}{mlir}
-%0 = "smt.bv.slt"(%arg0, %arg1) : 
-    (!smt.bv<64>, !smt.bv<64>) -> !smt.bool
-%1 = smt.bv.constant #smt.bv<0> : !smt.bv<64>
-%2 = smt.bv.constant #smt.bv<1> : !smt.bv<64>
-%3 = "smt.ite"(%0, %2, %1) : 
-    (!smt.bool, !smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
-\end{minted}
-
-Can be expressed in lean like this:
-\begin{minted}{lean}
-let a0 : Bool := (BitVec.slt arg1 arg0) ;
-let a1 : BitVec 64 := 0 ;
-let a2 : BitVec 64 := 1 ;
-let a3 : BitVec 64 := (cond a0 a2 a1) ;
-\end{minted}
-
-%\fehr{This is not really using the academic language.}
-%\fehr{Try to reformat this subsection into two distinct paragraph/ideas. First,
-%we want to have proof of equivalence, so we are mapping the SMt semantics to lean,
-%and seciond, we use the bitblastable semantics to automatically prove this
-%equivalence.}
-
-
-We then formulate equivalence theorems like the following, usinging the bv\_decide
-tactic, which leverages the bitblastable nature of the semantics and invokes a SAT solver
-to ensure that the theorem holds:
-
-\begin{minted}{lean}
-theorem slt_eq (a0 : BitVec 64) (a1 : BitVec 64) 
-    : RV64.slt a0 a1 = _slt a0 a1 := by
-  fold [RV64.slt, _slt]
-  bv_decide
-\end{minted}
-
-As part of this project, we built a tool to perform these transformation programatically, so
-we are able to obtain a machine verified proof of correctness from our RISC-V semantics.
 
 
 \section{Requirements Analysis}
@@ -680,7 +636,7 @@ defining semantics for RISC-V in the smt dialect.
 
 \subsection{Leveraging xdsl-smt}
 
-I use tools provided by xdsl and xdsl smt to create mlir blocks like the examples I've shown
+We use tools provided by xdsl and xdsl smt to create mlir blocks like the examples I've shown
 above for every operation and SSA value. After that, I register my lowerings to xdsl-smt and
 a lowering pass is created that recursively lowers all of the instructions from a source program
 into a program using the smt dialect.
@@ -689,34 +645,157 @@ The smt program is then converted into a SMTLib S-expression, which will can be 
 in a variety of tools, in particular we care about validating the equivalence between different
 such expressions.
 
-\section{SMT to Lean4}
+\section{Theorems of equivalence in Lean}
 
 In order to ensure the correctness of our semantics we programatically create lean4 theorems
 to formally prove the equivalence of our semantics to those we consider a source of truth, which
 are already written in lean.
 
-First we encode our risc-v instructions into mlir blocks, with the arguments being the registers
-and immediates used by the instruction. We then write a lowering from such a block into lean,
-since lean isn't an mlir dialect we cannot use xdsl to our advantage when outputing lean code,
-so we also need to write working formatting for our lean functions and theorems.
+We first obtain Lean functions that are representative of our RISC-V semantics, and we use them
+as part of our equivalence theorems. First we encode our risc-v instructions into mlir blocks, 
+with the arguments being the registers and immediates used by the instruction. Using our lowering to the smt dialect previously defined,
+we first lower the block, obtaining the semantics of our instruction. 
+%
+All that's left is lowering from smt to a lean function, but since lean isn't an mlir
+dialect we cannot use xdsl to our advantage when outputing lean code, so we also need to write 
+working formatting for our lean functions and theorems.
+
+\subsection{RISC-V to Lean Functions}
+
+Walking through an example, we first start with a RISC-V instruction:
+\begin{minted}{mlir}
+%0 = riscv.slt %arg0, %arg1 : (!riscv.reg, !riscv.reg) -> !riscv.reg 
+\end{minted}
+
+Which gets lowered to semantics:
+\begin{minted}{mlir}
+%0 = "smt.bv.slt"(%arg0, %arg1) : 
+   (!smt.bv<64>, !smt.bv<64>) -> !smt.bool
+%1 = smt.bv.constant #smt.bv<0> : !smt.bv<64>
+%2 = smt.bv.constant #smt.bv<1> : !smt.bv<64>
+%3 = "smt.ite"(%0, %2, %1) : 
+   (!smt.bool, !smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
+\end{minted}
+
+The next step is converting the semantics above into a lean function like the following:
+\begin{minted}{lean}
+let a0 : Bool := (BitVec.slt arg1 arg0) ;
+let a1 : BitVec 64 := 0 ;
+let a2 : BitVec 64 := 1 ;
+let a3 : BitVec 64 := (cond a0 a2 a1) ;
+\end{minted}
+
+Thus our program is a series of let bindings for each operation and SSA value. We assign each
+value a different ID and convert each element of the source program to a lean equivalent.
+%
+Types and attributes are straightforward, a \texttt{!smt.bv<X>} gets lowered to \texttt{BitVec X}
+constant attributes get lowered directly, and their type is luckily inferred by the lean type checker.
+Booleans behave in the same way.
+%
+We also have a variety of operations, some of which are grouped together when lowering so we can leverage
+the similarity of their structure.
+
+\subsubsection*{Constant Operation}
+The source operation:
+\begin{minted}{MLIR}
+%res = smt.bv.constant #smt.bv<X> : !smt.bv<Y>
+\end{minted}
+is lowered to:
+\begin{minted}{lean}
+let res : BitVec Y := X ;
+\end{minted}
 
 
-\subsection{Bitvector Operations}
+\subsubsection*{Standard Binary Operation}
+The source operation:
+\begin{minted}{mlir}
+%res = "smt.OP"(%arg0, %arg1) : (?, ?) -> ResultType
+\end{minted}
+is converted to:
+\begin{minted}[escapeinside=||]{lean}
+let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0 arg1}|;
+\end{minted}
+Where we use \textcolor{cyan}{cyan} to represent the lowered types, arguments and operation names.
+%
+Examples of binary operations are: \texttt{smt.bv.add, smt.bv.slt, smt.bv.ult} and more, all of which
+have a lean equivelent like \texttt{BitVec.add, BitVec.slt, BitVec.ult}.
 
-Define an abstract class for a generic lean printable. Inherit from these class and
-specialize it for various operation types.
+\subsubsection*{Shift Operation}
+Lean bit vector shift operations use shift values of type \texttt{Nat} so we need to add a 
+conversion for shift operations, so:
+\begin{minted}{mlir}
+%res = "smt.OP"(%arg0, %arg1) : (?, ?) -> ResultType
+\end{minted}
+is converted to:
+\begin{minted}[escapeinside=||]{lean}
+let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0}| (BitVec.toNat |\textcolor{cyan}{arg1}|);
+\end{minted}
 
-Table containing a mapping from smt instruction to lean operations.
+This pattern is used for operations \texttt{smt.bv.shl, smt.bv.lshr} and \texttt{smt.bv.ashr} which have
+bitvector equivalents \texttt{BitVec.shiftLeft, BitVec.ushiftRight} and \texttt{BitVec.sshiftRight} respectively
+
+\subsubsection*{Ternary Operation}
+\begin{minted}{mlir}
+%res = "smt.OP"(%arg0, %arg1, %arg2) : (?, ?, ?) -> ResultType
+\end{minted}
+is converted to:
+\begin{minted}[escapeinside=||]{lean}
+let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0 arg1 arg2}|;
+\end{minted}
+
+This pattern is used for operation \texttt{smt.ite} which has the
+lean equivalent \texttt{cond}.
+
+\subsubsection*{Extend Operation}
+
+\begin{minted}{mlir}
+%res = "smt.extendOP"(%arg) : (?) -> !smt.bv<X>
+\end{minted}
+is converted to:
+\begin{minted}[escapeinside=||]{lean}
+let res : |\textcolor{cyan}{ResultType}| := Bitvec.|\textcolor{cyan}{some}|Extend X |\textcolor{cyan}{arg}|;
+\end{minted}
+Where \emph{\texttt{start}} and \emph{\texttt{end}} are attributes of the source operation.
+
+This pattern is used for operation \texttt{smt.bv.zeroExtend} and \texttt{smt.bv.signExtend}.
+
+\subsubsection*{Extract Operation}
+
+\begin{minted}{mlir}
+%res = smt.bv.extract %arg from ? : (?) -> ResultType
+\end{minted}
+is converted to:
+\begin{minted}[escapeinside=||]{lean}
+let res : |\textcolor{cyan}{ResultType}| := BitVec.extractLsb |\emph{start} \emph{end} \textcolor{cyan}{arg}|;
+\end{minted}
+Where \emph{\texttt{start}} and \emph{\texttt{end}} are attributes of the source operation.
+
+We use the patterns above to recursively lowers all operations from the semantics block into an 
+appropriate Lean function.
 
 \subsection{Generating theorems with bv\_decide}
 
-Use bv\_decide to print theorems of equivalence.
+After succesfully obtaining a lean function for the RISC-V instructions semantics we formulate 
+equivalence theorems like the following, usinging the bv\_decide tactic, which leverages the 
+bitblastable nature of the semantics and invokes a SAT solver to ensure that the theorem holds.
 
-Example of theorem.
+The theorems will take the same shape, first using the unfold tactic to replace the let bindings
+with their underlying expressions, followed by bv\_decide, which finishes the proof:
+\begin{minted}{lean}
+theorem OP_eq (a0 : BitVec 64) (a1 : BitVec 64) 
+    : RV64.OP a0 a1 = _OP a0 a1 := by
+  unfold [RV64.OP, _OP]
+  bv_decide
+\end{minted}
+Here, \texttt{\_OP} is the name of the function we automatically printed, and \texttt{RV64.OP} is
+the functions which we consider a source of truth.
 
 \section{RISC-V Enumeration}
 
-This next section focuses on extending the MLIR-fuzz tool with support.
+To achive our goal of backend synthesis we require a method of enumerating the RISC-V program space.
+Thus we levereged and modified the mlir-fuzz tool to allow for exhaustive enumeration of RISC-V programs.
+This was done by implementing the dialect in IRDL, to provide mlir-fuzz with the operation definitions, 
+and extending the enumeration with `synthetic operations' which have `holes' for attributes 
 
 \subsection{RISC-V in IRDL}
 
