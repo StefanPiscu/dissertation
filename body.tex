@@ -732,7 +732,7 @@ let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0}| (BitVec.
 \end{minted}
 
 This pattern is used for operations \texttt{smt.bv.shl, smt.bv.lshr} and \texttt{smt.bv.ashr} which have
-bitvector equivalents \texttt{BitVec.shiftLeft, BitVec.ushiftRight} and \texttt{BitVec.sshiftRight} respectively
+bitvector equivalents \texttt{BitVec.shiftLeft, BitVec.ushiftRight} and \\ \texttt{BitVec.sshiftRight} respectively
 
 \subsubsection*{Ternary Operation}
 \begin{minted}{mlir}
@@ -799,24 +799,53 @@ and extending the enumeration with `synthetic operations' which have `holes' for
 
 \subsection{RISC-V in IRDL}
 
-\fehr{Technically it's in xDSL as well, but yeah it's not in MLIR}
-The risc-v dialect is only available in xdsl-smt.
+The RISC-V dialect is a work in progress implementation as part of the xDSL project, therefore
+when working with mlir-fuzz, which is a project written in C++ working with MLIR, we used
+opaque types when refering to registers. This is achieved by adding a new configuration for 
+the dialect in mlir-fuzz, and handling the edge cases with care.
 
-Mlir-fuzz uses mlir, therefore we need to handle the types and primitives
-in the risc-v dialect as opaque.
-
-I construct a new configuration for mlir-fuzz and add the IRDL to allow it
-to generate risc-v code.
+Example of a basic operation defined in IRDL:
+\begin{minted}{mlir}
+irdl.operation @add {
+  %register = irdl.is !riscv.reg
+  irdl.operands(operand0: %register, operand1: %register)
+  irdl.results(result0: %register)
+}
+\end{minted}
 
 \subsection{Synthetic Operations}
 
-We need to generate holes for attributes, that will be later filled by the SMT solver.
+Many RISC-V operations use attributes to encode constants. During our synthesis process we want
+to be able to infer these constants, therefore when enumerating we are going to replace operations
+that use attributes with a `synthetic form'. These \texttt{synth.op}s contain the information to build 
+an instance of the underlying operation.
 
-We ``lift'' operations with attributes into synth.ops
+\begin{Verbatim}[commandchars=\\\{\}, fontsize=\small]
+\textcolor{red}{%res} = "synth.op"(\textcolor{green!50!black}{%op...}) <\textcolor{blue}{op_name = \emph{name}}> \{\textcolor{orange}{attr : type, ...}\} : \textcolor{teal}{(!type)} -> \textcolor{magenta}{!type}
+\end{Verbatim}
 
-Structure of a synth op, with an example.
+As we can see in the example above a synthetic op contains the \textcolor{blue}{original operation name},
+\textcolor{green!50!black}{operands}, \textcolor{orange}{a dictionary containing attribute names and 
+their desired types}, \textcolor{teal}{the operand types} and \textcolor{magenta}{the result types}.
 
-Explain generalizing types from irdl constraints.
+To obtain the attribute types for emmiting synth ops, we would need to parse them from the IRDL constraints.
+Unfortunately, IRDL doesn't yet have the expressivity to handle arbitrary types for
+attributes. As a workaround we resorted to using a fixed value for immediates (usually zero)
+so the operation has the correct shape, which would be ignored when emmiting synthetic operations.
+To identify which operations are meant to be emmited using this method we marked them with the IRDL
+attribute \texttt{synth}.
+\begin{minted}{mlir}
+irdl.operation @addi attributes {synth} {
+  %register = irdl.is !riscv.reg
+  %imm = irdl.is 0 : si12 
+  irdl.operands(operand0: %register)
+  irdl.results(result0: %register)
+  irdl.attributes {"immediate" = %imm}
+}
+\end{minted}
+
+%TODO: Explain how you are using synth ops
+
 \section{Backend Synthesis}
 
 After leveraging mlir-fuzz to exhaustivly search the program space we need to leverage the
