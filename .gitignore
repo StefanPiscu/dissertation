@@ -8,3 +8,9 @@ build/*
 *.fdb_latexmk
 *.gz
 *.aux
+*.bcf
+*.fls
+*.log
+*.out
+*.xml
+*.toc
