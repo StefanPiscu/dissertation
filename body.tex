@@ -83,20 +83,16 @@ Souper \cite{souper}.
 \label{ch:prep}
 \section{MLIR}
 
-%\fehr{Mention that MLIR is a compiler, otherwise it is unclear from this paragraph what MLIR is.}
-%\fehr{Mention where MLIR come from? The LLVM project. Who uses it maybe?}
-%\fehr{Attributes are static data unlike values.}
-%\fehr{Maybe make this paragraph about SSA, and not mention SSA before?}
-%\fehr{Overall, I think you can explain more what the components of an MLIR operation are,
-%for instance showing at least an example?}.
-
+\fehr{MLIR is not actually an acronym}
 MLIR (Multi-Level Intermediate Representation) is an extensible compiler framework that allows
 users to define IRs named dialects. Developed as a sub-project of LLVM it aims to facilitate the 
-construction of domain specific compilers and improve compilation for heterogeneous computing. 
+construction of domain specific compilers and improve compilation for heterogeneous computing.
 One feature worth highlighting is the iteroperability of dialects, allowing any dialect to be
 used within any MLIR program.
 
-
+\fehr{I would rewrite this paragraph a bit. probably focus more on the operation aspect?
+Saying that it is the main computation unit for instance, and then building an
+understanding of MLIR from that?}
 Programs enforce static single assignment in order to make dataflow information explicit. That is,
 each value is defined exactly once before it is used.
 Programs are made of blocks of operations, which can have a number of operands and attributes. 
@@ -114,9 +110,6 @@ as well as \textcolor{teal}{operation type}, and \textcolor{magenta}{result type
 
 \subsection*{xDSL}
 
-%\fehr{I think this needs to be expanded, as this is quite short. I am not immediately sure what to say though.
-%Maybe that whatever you do in xDSL could also work in MLIR if ported to C++?}
-
 Troughout the project I will be using the xDSL compiler framework \cite{xdsl} which is 
 interoperable with MLIR, but is written in Python to allow for rapid prototyping. The IR files for
 both xdsl and mlir both use the same format, so existing tools build for MLIR can still be used.
@@ -125,11 +118,7 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 
 \subsection*{LLVM IR}
 
-%\fehr{Maybe explain where LLVM fits in the compilation landscape? Like where it is used, or
-%why it is important? I would otherwise expand a bit on this section as well in that direction.}
-%\fehr{Note, this is the LLVM dialect in MLIR, so a bit different. Maybe explain how it
-%mimicks LLVM IR in MLIR?}
-
+\fehr{Sentence is broken.}
 LLVM set of compiler and toolchains technologies that leverages a language-independent 
 intermediate representation (LLVM IR), that serves as a portable high level assembly language
 that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust, etc.) 
@@ -149,12 +138,6 @@ func.func @main(%arg0 : i64, %arg1 : i64) -> i1 {
 
 
 \subsection*{RISC-V}
-
-%\fehr{Explain why RISC-V? (Simple ISA and open source)}
-%\fehr{Explain that there is a pre-existing RISC-V dialect in xDSL. Here, starting with
-%"Below is an example" doesn't really work because the reader doesn't know what the context
-%of this paragraph is.}
-
 
 RISC-V is a simple open source instruction set architecture, with a variety of extensions.
 I've chosen it as my target for the project due to it's simplicity and extensibility. 
@@ -192,10 +175,6 @@ irdl.operation @and {
 \end{minted}
 \subsection*{PDL}
 
-%\fehr{I think this would look better if you merged all these sentences into a single
-%paragraph, even without changing any text.}
-%\fehr{Mention that PDL is defined in MLIR and xDSL, and that the main point of PDL
-%is that we can check if it is correct or not using our tools.}
 PDL (Pattern Definition Language) is a dialect used in order to define rewrite
 patterns. Such patterns can be used in order to transform code.
 %
@@ -239,8 +218,6 @@ operations so bitvector theory seems like a natural choice.
 
 \subsection{SMT dialect}
 
-%\fehr{This kind of introduction is much better than the previous ones, where you explain the
-%dialect you are using, and why this dialect is useful (for instance SMT solvers here).}
 In order to remain within the confines of MLIR, we leverage the specialized SMT dialect 
 \cite{smt-mlir} to define the semantics of our IR instructions. This dialect can be 
 easily converted to SMT-Lib, a format that is widely used by many SMT solvers. Moreover
@@ -298,15 +275,7 @@ llvm.func @f(%x: i32) -> i1 {
 
 We can now see an useful refinement for poison: Any value \emph{refines} poison.
 
-
-
 \subsection{Verifying rewrites}
-%\fehr{I would not write things like "the best part about ..." in an academic setting,
-%because you don't have any evidence to back this claim (which cannot be evidenced
-%anyway).}
-%\fehr{Actually, we are not using translation validation. We are just verifying that
-%the rewrites are correct, which is stronger than translation valiadation.}
-%\fehr{I would also move that at the end of the section.}
 One benefit of having access to SMT semantics for our dialect is leveraging SMT solvers to 
 prove properties about different expressions. For our purposes we prove that our output program 
 is a refinement of our input program. So we can exhaustively search the program space until
@@ -316,22 +285,14 @@ as the SMT solver ensures that the translation is valid for all inputs.
 There are more benefits of having such semantics, as presented in \cite{smt-mlir}, however these
 aren't the focus of the project.
 \section{Lowering Synthesis}
-%\fehr{We should probably not call this section "Superoptimization", as we are just
-%using these things for backend synthesis.}
-%\fehr{Superoptimization is not restrained to loop free sequences, it's just that it's
-%mostly the only thing we know how to do. It also doesn't do it only via exhaustive
-%search, this is just one of the techniques that exist.}
-%\fehr{Can you try to merge some of the paragraphs together? Also, how much is this
-%preparation versus explaining what you are doing in your project? It is nice to
-%identify what already exists (lowering synthesis) and what is your contribution (using
-%it for dialects), and I think you should only talk about the first part here?}
-%\stefan{I guess the idea of this chapter is to present the plan for the project}
 
+\fehr{You talk about superoptimization but the section is about lowering synthesis.}
 As mentioned in \ref{background}, superoptimization is a technique where a compiler 
 attempts to find the optimal sequence of instructions that has the same semantics as a source
 sequence. One technique to do this is via exhausting search over the program space and boolean 
 tests to prove equivalence of the source and target.
 %
+\fehr{broken sentence}
 It has been used to successfully find new optimizations both offline, and to improve
 programs by running it as a compilation pass. Some very popular compilers have 
 implemented and used this technique, like gnu superoptimizer for x86 assembly \cite{gnu-superopt},
@@ -364,11 +325,7 @@ the SMT solver fills with values that can make the programs equivalent.
 
 \section{Formal Verification}
 
-%\fehr{We are using lean mostly because it is a proof assistant (so it is very unlikely
-%it has large bugs in its core), and it is very expressive.}
-%\fehr{Those examples are great! And I think we should have more of these in the earlier
-%sections as well to help the reader understand all the concepts}
-
+\fehr{People might not know what bitblastable means here.}
 In this work, we establish some semantics for RISC-V, so we can talk about the correctness
 of a lowering. We take as a source of truth, semantics defined in the sail language \cite{sail-paper}.
 In particular, we use hand-written bitblastable semantics written in Lean, that are proven
@@ -415,11 +372,6 @@ posing which questions are to be asked, and evaluated in the project.}
 
 \subsection{Development Model}
 
-%\fehr{It took me a while to understand this text. Can you try to rewrite it?}
-%\fehr{Should this be using the future tense? This already happened, so shouldn't you
-%say something like "We first agreed on a small working prototype, that we then
-%expanded with the following features"?}
-
 Due to the novel nature of the project, development followed the spiral model, which focuses on 
 iteration and risk assesment.
 %
@@ -439,9 +391,6 @@ The project went through the following major iteration cycles:
 \end{enumerate}
 
 \subsection{Languages and Tools}
-
-%\fehr{Should you explain in each bullet point what are you using the tool for?
-%Otherwise, I don't see the point of a bullet point list here.}
 
 The project was written primarily in Python, within the VSCode editor with the pylance extension,
 which provides strict type checking. In addition, the project also used C++, for the work performed
