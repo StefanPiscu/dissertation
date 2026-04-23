@@ -83,24 +83,24 @@ Souper \cite{souper}.
 \label{ch:prep}
 \section{MLIR}
 
-\fehr{MLIR is not actually an acronym}
 MLIR (Multi-Level Intermediate Representation) is an extensible compiler framework that allows
 users to define IRs named dialects. Developed as a sub-project of LLVM it aims to facilitate the 
 construction of domain specific compilers and improve compilation for heterogeneous computing.
 One feature worth highlighting is the iteroperability of dialects, allowing any dialect to be
 used within any MLIR program.
 
-\fehr{I would rewrite this paragraph a bit. probably focus more on the operation aspect?
-Saying that it is the main computation unit for instance, and then building an
-understanding of MLIR from that?}
-Programs enforce static single assignment in order to make dataflow information explicit. That is,
-each value is defined exactly once before it is used.
-Programs are made of blocks of operations, which can have a number of operands and attributes. 
-Unlike operands which are SSA values representing the results of other operations, attributes 
-constitute static data. Operations also have types, and are also type checked, ensuring the 
-programs are well formed. In the example below we can see \textcolor{red}{result(s)}, 
+
+The main computation unit in MLIR programs are operations, which have a set of operands (variables),
+attributes (static data), and results. Programs are a series of operations which can come from 
+multiple dialects, they also have types, which are verified to ensure the program is well formed. 
+%
+In order to make dataflow information explicit, which makes optimization much easier, MLIR enforces
+single static assignment, that is each value is defined exactly once (as a result of an operation), 
+and will never be reassigned.
+%
+In the example below we can see \textcolor{red}{result(s)}, 
 \textcolor{blue}{operation name}, \textcolor{green!50!black}{operands}, \textcolor{orange}{attributes}, 
-as well as \textcolor{teal}{operation type}, and \textcolor{magenta}{result type}
+as well as \textcolor{teal}{operation type}, and \textcolor{magenta}{result type}:
 
 \begin{minted}[escapeinside=||]{text}
 |\textcolor{red}{\texttt{\%res}}| = |\textcolor{blue}{\texttt{"arith.addi"}}|(|\textcolor{green!50!black}{\texttt{\%a, \%b}}|) |\textcolor{orange}{\texttt{\{overflowFlags = 0 : i64\}}}| : |\textcolor{teal}{\texttt{(i32, i32)}}| -> |\textcolor{magenta}{\texttt{i32}}|
@@ -118,12 +118,11 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 
 \subsection*{LLVM IR}
 
-\fehr{Sentence is broken.}
-LLVM set of compiler and toolchains technologies that leverages a language-independent 
-intermediate representation (LLVM IR), that serves as a portable high level assembly language
-that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust, etc.) 
-have frontends that target LLVM IR. This is why, I've elected to use it the source IR  for this 
-project.
+LLVM is set of compiler and technologies that leverages a language-independent 
+intermediate representation (LLVM IR). The IR serves as a portable high level assembly language
+that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust,
+etc.) have frontends that target LLVM IR. This is why, I've elected to use it as the source IR 
+for this project.
 
 In particular, I will be targeting a subset of the LLVM dialect, which mimicks the
 LLVM IR while having access to the suite of tools provided by MLIR and xDSL. I'm focusing on
@@ -284,20 +283,19 @@ as the SMT solver ensures that the translation is valid for all inputs.
 %
 There are more benefits of having such semantics, as presented in \cite{smt-mlir}, however these
 aren't the focus of the project.
-\section{Lowering Synthesis}
 
-\fehr{You talk about superoptimization but the section is about lowering synthesis.}
+\section{Superoptimization and Lowering Synthesis}
+
+%\fehr{You talk about superoptimization but the section is about lowering synthesis.}
 As mentioned in \ref{background}, superoptimization is a technique where a compiler 
 attempts to find the optimal sequence of instructions that has the same semantics as a source
-sequence. One technique to do this is via exhausting search over the program space and boolean 
+sequence. One technique used to do this is via exhausting search over the program space and boolean 
 tests to prove equivalence of the source and target.
 %
-\fehr{broken sentence}
-It has been used to successfully find new optimizations both offline, and to improve
+Superoptimization has been used to successfully find new optimizations both offline, and to improve
 programs by running it as a compilation pass. Some very popular compilers have 
 implemented and used this technique, like gnu superoptimizer for x86 assembly \cite{gnu-superopt},
 and souper for LLVM IR \cite{souper}.
-
 
 
 Lowering synthesis is a similar concept, but instead of searching for optimizations it searches
@@ -325,11 +323,13 @@ the SMT solver fills with values that can make the programs equivalent.
 
 \section{Formal Verification}
 
-\fehr{People might not know what bitblastable means here.}
+%\fehr{People might not know what bitblastable means here.}
 In this work, we establish some semantics for RISC-V, so we can talk about the correctness
 of a lowering. We take as a source of truth, semantics defined in the sail language \cite{sail-paper}.
-In particular, we use hand-written bitblastable semantics written in Lean, that are proven
-equivalent to the source of truth. \cite{riscv-lean}
+Because we will be using these semantics to automatically generate proofs using traditional tools
+like SAT and SMT solvers we these to be bitblastable, i.e the bit vector expressiosn can be converted
+into expressions about individual bits before being passed into these tools. In particular, we 
+use hand-written semantics in Lean, that are proven equivalent to the source of truth. \cite{riscv-lean}
 %
 Lean is a proof assistant which is used to obtain machine verified theorems. In order to achieve
 a satisfactory level of correctness for our semantics we require Lean theorems that prove the
@@ -426,10 +426,26 @@ Moreover I had no prior knowledge of the xdsl-smt and mlir-fuzz projects before 
 \clearpage
 \chapter{Implementation}
 \label{ch:impl}
+%\fehr{Maybe add an introduction to the different parts you are going to talk about?}
+This project implements the systems necessary to perform lowering synthesis from the 
+LLVM IR dialect of MLIR to the RISC-V dialect present in xdsl-smt.
 
-\fehr{Maybe add an introduction to the different parts you are going to talk about?}
+\begin{itemize}
+\item In section \ref{RISC-V to SMT} we present an overview of converting RISC-V dialect operations into 
+their underlying SMT semantics using the smt dialect.
+\item To ensure the correctness of our semantics we built a tool to generate Lean theorems
+of equivalece between our selected source of truth and our implementation, which are then
+checked for correctness by the proof-assistant. This is covered in section \ref{lean theorems}.
+\item We then present (in section \ref{enumeration}) the modificatioes made to the enumerator that were made to allow us
+to exhaustively search the RISC-V program space and handle the way attributes are used in the
+RISC-V dialect.
+\item Then, in section \ref{backend synthesis}, we cover the backend synthesis process, from the 
+search for a valid transformation, to the construction of a PDL pattern for it, that will be used
+as part of the lowering.
+\end{itemize}
 
 \section{Base RISC-V to SMT Semantics}
+\label{RISC-V to SMT}
 
 In order to lower a program written in the RISC-V dialect to its SMT semantics, we need to
 be able to lower the types of all the primitive values (registers and immediates) together 
@@ -441,15 +457,10 @@ the RISC-V assmenbly.
 
 There are only a few types of values we will encounter in RISC-V code, given we are working 
 with values in CPU registers, and encoded within instructions they can all be represented as 
-bitvectors of apropriate sizes, however they will need to be extened to the same size for 
-our smt operations.
-
-\fehr{Maybe this a paragraph maybe? Or have a sentence introducing the list.}
-\begin{itemize}
-\item Register values are encoded in 64-bit bitvectors
-\item Immediates are 12 bits, and should be extended to 64 bits
-\item Shift values are 6 bits, and should be extended to 64 bits
-\end{itemize}
+bitvectors of apropriate sizes, however they will need to be extended to the same size for 
+our smt operations. Register values will be encoded as 64-bit bitvectors, and the 12 bit
+immediates and 6 bit shift value attributes that appear in the RISC-V instructions are 
+extended to 64 bits to operate together with the registers.
 
 \subsection{Handling diffrent Instruction Types}
 
@@ -457,16 +468,17 @@ RISC-V instructions can be divided into a few diffrent types, based on their str
 Therefore we can extract the values, apply the appropriate conversion, then use the values
 for the SMT semantics.
 
-\fehr{Istead of having a bullet point, can you maybe use the `paragraph' command?}
-\fehr{You are just describing the instruction types here, should this be moved to preparation?}
-We have the following instruction types:
-\begin{itemize}
-\item Register-Register Operations
+%\fehr{Istead of having a bullet point, can you maybe use the `paragraph' command?}
+%\fehr{You are just describing the instruction types here, should this be moved to preparation?}
+% I'm trying to address how we handle them, they don't necessarily corespond to the RISC-V instruction types
+% For example the Word operations and the full ones aren't different types in RISC-V
 
+In our implemntation we handle the following instruction categories: 
+
+\paragraph{Register-Register Operations} 
 We can directly get the values of the registers and convert them to 64 bit bitvectors.
 
-\item Register-Register Word Operation
-
+\paragraph{Register-Register Word Operation} 
 Since we are using RV64, we also have some operations that are meant to work on a 32-bit word.
 
 The semantics for this are the same as for Register-Register Operations, but the values are 
@@ -480,8 +492,7 @@ Example:
 %res = smt.bv.sign_extend %tmp : (!smt.bv<12>) -> !smt.bv<64>
 \end{minted}
 
-\item Register-Immediate Operation
-
+\paragraph{Register-Immediate Operation}
 We extract the immediate and extend it to a full sized bit vector, which can then operate 
 with the register.
 
@@ -492,8 +503,7 @@ Example:
 // Perform the operation on the operands
 \end{minted}
 
-\item Register-Immediate Word Operation
-
+\paragraph{Register-Immediate Word Operation}
 We sign extend the immediate to 64 bits, than truncate the result, before sign extending it again.
 
 Example: 
@@ -505,8 +515,7 @@ Example:
 %res = smt.bv.sign_extend %tmp2 : (!smt.bv<32>) -> !smt.bv<64>
 \end{minted}
 
-\item Register-Register Shift (Word) Operation
-
+\paragraph{Register-Register Shift (Word) Operation}
 We truncate the shift register (since only the lower bits matter), and then zero-extend it back 
 to perform the operation.
 
@@ -520,8 +529,7 @@ Example for 64 bits:
 
 For word operations we use 32 bit bitvectors, truncate rs1, and sign extend the result.
 
-\item Register-Shamt Shift (Word) Operation
-
+\paragraph{Register-Shamt Shift (Word) Operation} 
 Extend the shift value from 6 bits the 64 (32) bits.
 
 Example for 64 bits: 
@@ -532,8 +540,6 @@ Example for 64 bits:
 \end{minted}
 
 Again, word operations will have additional truncation of \texttt{\%rs} followed by sign extension of \texttt{\%res}.
-
-\end{itemize}
 
 
 \subsection{Exploiting identical semantics}
@@ -546,13 +552,12 @@ the values from each instruction we can exploit this similarity so have cleaner 
 Moreover, we also see how many semantics would only differ by the smt operation they perform.
 Thus we recognize the following categories:
 
-\fehr{Same here about the bullet points}
-\fehr{It would be nice to have a table the number of instructions in each category.
-Possibly the list of instructions per category as well if it fits?}
+%\fehr{Same here about the bullet points}
+%\fehr{It would be nice to have a table the number of instructions in each category.
+%Possibly the list of instructions per category as well if it fits?}
 
-\begin{itemize}
 
-\item Trivial Operations 
+\paragraph{Trivial Operations}
 These operations can be expressed as a single smt operation.
 
 \begin{minted}{mlir}
@@ -567,7 +572,7 @@ they type of \texttt{?} can be inferred from the types of the operands.
 This is a the common case and includes a wide range of operations.
 
 
-\item Comparisons
+\paragraph{Comparisons}
 
 These require special care as the smt dialect comparison operations yield boolean values
 that need to be converted into bitvectors. So semantics for comparison operations look like the
@@ -575,21 +580,25 @@ this:
 
 \begin{minted}{mlir}
 // obtain op1 and op2 as SSA Values
-res_bool = smt.COMPARISON op1 op2 : (!smt.bv<?>, !smt.bv<?>) -> !smt.bv<?>
+%res_bool = smt.COMPARISON op1 op2 : (!smt.bv<?>, !smt.bv<?>) -> !smt.bv<?>
 %zero = smt.bv.constant #smt.bv<0> : !smt.bv<64>
-%on = smt.bv.constant #smt.bv<1> : !smt.bv<64>
-%res = "smt.ite"(%0, %2, %1) :
+%one = smt.bv.constant #smt.bv<1> : !smt.bv<64>
+%res = "smt.ite"(%res_bool, %one, %zero) :
     (!smt.bool, !smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
 \end{minted}
 
-\item Other
+\paragraph{Other}
 
 Some instructions have completely custom semantics, however with careful implementation
-they plugged into the existing instruction types.
+they plugged into the existing instruction types. For example the the \texttt{slli.uw} instruction
+which has the following semantics, requiring a trunctation followed by a zero extension:
 
-\fehr{Here it would be really nice to have an example for instance.}
-
-\end{itemize}
+%\fehr{Here it would be really nice to have an example for instance.}
+\begin{minted}{mlir}
+%trunc_reg = smt.bv.extract %reg : (!smt.bv<64>) -> !smt.bv<32>
+%ext_reg = smt.bv.extend %trunc_reg : !smt.bv<32> -> !smt.bv<64>
+%res = smt.bv.shl %ext_reg %shamt : (!smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
+\end{minted}
 
 By building abstractions for these instruction types and common behaviours, we can very easily
 implement the semantics for an instruction. This yields an easily extensible framework for 
@@ -602,13 +611,21 @@ above for every operation and SSA value. After that, I register my lowerings to 
 a lowering pass is created that recursively lowers all of the instructions from a source program
 into a program using the smt dialect.
 
-\fehr{Maybe a paragarph or a diagram to explain how this actually works?}
+%\fehr{Maybe a paragarph or a diagram to explain how this actually works?}
+%Agreed, will do diagram later
+
+\begin{verbatim}
+          Diagram showing the lowering process 
+\end{verbatim}
+
 
 The smt program is then converted into a SMTLib S-expression, which will can be used by SMT solvers
 in a variety of tools, in particular we care about validating the equivalence between different
 such expressions.
 
 \section{Theorems of equivalence in Lean}
+
+\label{lean theorems}
 
 In order to ensure the correctness of our semantics we programatically create lean4 theorems
 to formally prove the equivalence of our semantics to those we consider a source of truth, which
@@ -658,7 +675,7 @@ Booleans behave in the same way.
 We also have a variety of operations, some of which are grouped together when lowering so we can leverage
 the similarity of their structure.
 
-\subsubsection*{Constant Operation}
+\paragraph{Constant Operation}
 The source operation:
 \begin{minted}{MLIR}
 %res = smt.bv.constant #smt.bv<X> : !smt.bv<Y>
@@ -669,7 +686,7 @@ let res : BitVec Y := X ;
 \end{minted}
 
 
-\subsubsection*{Standard Binary Operation}
+\paragraph{Standard Binary Operation}
 The source operation:
 \begin{minted}{mlir}
 %res = "smt.OP"(%arg0, %arg1) : (?, ?) -> ResultType
@@ -683,7 +700,7 @@ Where we use \textcolor{cyan}{cyan} to represent the lowered types, arguments an
 Examples of binary operations are: \texttt{smt.bv.add, smt.bv.slt, smt.bv.ult} and more, all of which
 have a lean equivelent like \texttt{BitVec.add, BitVec.slt, BitVec.ult}.
 
-\subsubsection*{Shift Operation}
+\paragraph{Shift Operation}
 Lean bit vector shift operations use shift values of type \texttt{Nat} so we need to add a 
 conversion for shift operations, so:
 \begin{minted}{mlir}
@@ -697,7 +714,7 @@ let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0}| (BitVec.
 This pattern is used for operations \texttt{smt.bv.shl, smt.bv.lshr} and \texttt{smt.bv.ashr} which have
 bitvector equivalents \texttt{BitVec.shiftLeft, BitVec.ushiftRight} and \\ \texttt{BitVec.sshiftRight} respectively
 
-\subsubsection*{Ternary Operation}
+\paragraph{Ternary Operation}
 \begin{minted}{mlir}
 %res = "smt.OP"(%arg0, %arg1, %arg2) : (?, ?, ?) -> ResultType
 \end{minted}
@@ -709,7 +726,7 @@ let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0 arg1 arg2}
 This pattern is used for operation \texttt{smt.ite} which has the
 lean equivalent \texttt{cond}.
 
-\subsubsection*{Extend Operation}
+\paragraph{Extend Operation}
 
 \begin{minted}{mlir}
 %res = "smt.extendOP"(%arg) : (?) -> !smt.bv<X>
@@ -722,7 +739,7 @@ Where \emph{\texttt{start}} and \emph{\texttt{end}} are attributes of the source
 
 This pattern is used for operation \texttt{smt.bv.zeroExtend} and \texttt{smt.bv.signExtend}.
 
-\subsubsection*{Extract Operation}
+\paragraph{Extract Operation}
 
 \begin{minted}{mlir}
 %res = smt.bv.extract %arg from ? : (?) -> ResultType
@@ -736,12 +753,13 @@ Where \emph{\texttt{start}} and \emph{\texttt{end}} are attributes of the source
 We use the patterns above to recursively lowers all operations from the semantics block into an 
 appropriate Lean function.
 
-\fehr{bv\_decide is creating a proof, not really a theorem? Maybe "Generating automatically proven theorems"?}
-\subsection{Generating theorems with bv\_decide}
+%\fehr{bv\_decide is creating a proof, not really a theorem? Maybe "Generating automatically proven theorems"?}
+\subsection{Proving theorems with bv\_decide}
 
 After succesfully obtaining a lean function for the RISC-V instructions semantics we formulate 
 equivalence theorems like the following, usinging the bv\_decide tactic, which leverages the 
-bitblastable nature of the semantics and invokes a SAT solver to ensure that the theorem holds.
+bitblastable nature of the semantics and invokes a SAT solver to automatically generate a proof
+for the theorem, which gets checked by Lean.
 
 The theorems will take the same shape, first using the unfold tactic to replace the let bindings
 with their underlying expressions, followed by bv\_decide, which finishes the proof:
@@ -755,6 +773,8 @@ Here, \texttt{\_OP} is the name of the function we automatically printed, and \t
 the functions which we consider a source of truth.
 
 \section{RISC-V Enumeration}
+
+\label{enumeration}
 
 To achive our goal of backend synthesis we require a method of enumerating the RISC-V program space.
 Thus we levereged and modified the mlir-fuzz tool to allow for exhaustive enumeration of RISC-V programs.
@@ -808,9 +828,30 @@ irdl.operation @addi attributes {synth} {
 }
 \end{minted}
 
-%TODO: Explain how you are using synth ops
+Synthetic operation allow for the usage of arbitrary smt constants for the values that would
+normally be represented by the attributes. For example we have the following lowering from
+a synthetic add to the semantics, where we use a \texttt{smt.declare\_const} instead of the
+attribute.
+
+\begin{minted}{mlir}
+%res = "synth.op"(%op) <op_name = riscv.addi> {immediate : si12} 
+    : (!riscv.reg) -> !riscv.reg
+\end{minted}
+To:
+\stefan{Don't know if I should tackle reconstruction here on in the next chapter, for now I'll
+leave a comment here and explain later in the next chapter, since this one is mostly about enumeration}
+\begin{minted}{mlir}
+%imm = smt.declare_const : () -> !smt.bv<12>
+//... (some additional operations used to reconstruct the transformation)
+%imm_ext = smt.bv.signExtend %imm : !smt.bv<12> -> !smt.bv<64>
+%res = smt.bv.add %op %imm_ext : (!smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
+\end{minted}
+This leaves a hole, that the smt solver will be able to fill with an appropriate constant if one
+exists that leads to a correct lowering.
 
 \section{Backend Synthesis}
+
+\label{backend synthesis}
 
 After leveraging mlir-fuzz to exhaustivly search the program space we need to leverage the
 semantics to check if the input and output programs are equivalent.
