@@ -118,6 +118,7 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 
 \subsection*{LLVM IR}
 
+\fehr{Sentence is broken}
 LLVM is set of compiler and technologies that leverages a language-independent 
 intermediate representation (LLVM IR). The IR serves as a portable high level assembly language
 that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust,
@@ -426,10 +427,10 @@ Moreover I had no prior knowledge of the xdsl-smt and mlir-fuzz projects before 
 \clearpage
 \chapter{Implementation}
 \label{ch:impl}
-%\fehr{Maybe add an introduction to the different parts you are going to talk about?}
 This project implements the systems necessary to perform lowering synthesis from the 
 LLVM IR dialect of MLIR to the RISC-V dialect present in xdsl-smt.
 
+\fehr{Probably keep this as a paragraph instead of a bullet point list}
 \begin{itemize}
 \item In section \ref{RISC-V to SMT} we present an overview of converting RISC-V dialect operations into 
 their underlying SMT semantics using the smt dialect.
@@ -468,13 +469,9 @@ RISC-V instructions can be divided into a few diffrent types, based on their str
 Therefore we can extract the values, apply the appropriate conversion, then use the values
 for the SMT semantics.
 
-%\fehr{Istead of having a bullet point, can you maybe use the `paragraph' command?}
-%\fehr{You are just describing the instruction types here, should this be moved to preparation?}
-% I'm trying to address how we handle them, they don't necessarily corespond to the RISC-V instruction types
-% For example the Word operations and the full ones aren't different types in RISC-V
-
 In our implemntation we handle the following instruction categories: 
 
+\fehr{Either expand these paragraphs to 2-3 sentences, or merge these into a single paragraph}
 \paragraph{Register-Register Operations} 
 We can directly get the values of the registers and convert them to 64 bit bitvectors.
 
@@ -552,9 +549,9 @@ the values from each instruction we can exploit this similarity so have cleaner 
 Moreover, we also see how many semantics would only differ by the smt operation they perform.
 Thus we recognize the following categories:
 
-%\fehr{Same here about the bullet points}
-%\fehr{It would be nice to have a table the number of instructions in each category.
-%Possibly the list of instructions per category as well if it fits?}
+\fehr{Same here about merging paragraphs or expanding them}
+\fehr{It would be nice to have a table the number of instructions in each category.
+Possibly the list of instructions per category as well if it fits?}
 
 
 \paragraph{Trivial Operations}
@@ -828,6 +825,8 @@ irdl.operation @addi attributes {synth} {
 }
 \end{minted}
 
+\fehr{Maybe first explain why we need synthetic operations? What is the problem you are
+trying to solve here?}
 Synthetic operation allow for the usage of arbitrary smt constants for the values that would
 normally be represented by the attributes. For example we have the following lowering from
 a synthetic add to the semantics, where we use a \texttt{smt.declare\_const} instead of the
