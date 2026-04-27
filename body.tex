@@ -118,8 +118,8 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 
 \subsection*{LLVM IR}
 
-\fehr{Sentence is broken}
-LLVM is set of compiler and technologies that leverages a language-independent 
+%\fehr{Sentence is broken}
+LLVM is a set of compiler and technologies that leverages a language-independent 
 intermediate representation (LLVM IR). The IR serves as a portable high level assembly language
 that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust,
 etc.) have frontends that target LLVM IR. This is why, I've elected to use it as the source IR 
@@ -370,6 +370,8 @@ while enumerating risc-v programs.
 posing which questions are to be asked, and evaluated in the project.}
 
 \section{Software Engineering}
+
+\stefan{Add intro}
 
 \subsection{Development Model}
 
@@ -852,42 +854,177 @@ exists that leads to a correct lowering.
 
 \label{backend synthesis}
 
-After leveraging mlir-fuzz to exhaustivly search the program space we need to leverage the
-semantics to check if the input and output programs are equivalent.
+We use the tools implemented thus far to synthesise a backend from a the arithmetic subset of 
+LLVM IR dialect instructions to the RISC-V dialect. To achieve this we efficiently
+enumerate the search space, validate valid lowerings, reconstruct the lowering by eliminating
+synthetic operation, than generate a PDL Pattern for the lowering that can then be applied to 
+arbitrary programs.
 
-We handle synth ops here, converting them into their underlying operation, but leaving
-marker operations (synth.FromValueOp, and synth.ConvOp) to later reconcile the values
-from given in the SMT model with the attributes in our program.
+\subsection{Multithreaded Enumeration}
 
-Example of transformation the program goes trough.
+To efficiently make use of the available compute we exploit the inherent division of the lowering
+task, on an instruction by instruction basis. Thus, we use an executor pool to run many tasks in 
+parallel and create a new job for every single operation our source set. The highly parallelisable
+nature of the task at hand means that it can make very effective use of high performance compute
+clusters.
 
-Performance concerns about using 64-bit registers followed by hypothesis that the restriction
-is the size of the immediates, not of the registers, which is defined by the architecture, and
-is a manageable size.
+We also want to be able to stop once we find a correct translation, as to not waste compute resources. 
+We achieve this by performing iterative deepeing on the size of our programs, i.e. we 
+first generate the programs with 1 operation, then we generate programs with up to 2 operations 
+and so on. This way, if we find a valid lowering for an instruction we are sure it is optimal, 
+as we had previously failed finding a lowering with any smaller program.
+
 
 \subsection{Refinements}
 
-As mentioned in preparation there are different refinements that we can consider.
+The next step in the backend synthesis process involves confirming whether the target program is a 
+refinement of the source. After lowering the program to their semantics in the SMT dialect we construct
+an SMT expression that is true if and only if our refinement relation below holds for all possible inputs.
 
-Explanation of sign extension refinement.
+\begin{equation*}
+\text{\emph{target inputs refine the source inputs}} \implies \text{\emph{target outputs refine the source outputs}}
+\end{equation*}
 
-Pros and cons analysis (some fast comparisons, other operations may require handling, as they may
-overflow, signedness/unsignedess is weird).
+We do this by building an expression representative of the refinement relation above making use of the programs
+semantics and a chosen refineme scheme for the source and target values, and then wrapping it in universal quantifiers. 
+We also need to refer to any existensially quantified values that fill the holes in synthetic operations that
+are defined using \texttt{smt.declare\_const}. We do this by moving all such operations before the \texttt{smt.forall}
+block.
+%
+Thus our final SMT expression will look something like the following, where operation and type names are
+placeholders for the types and operation of the programs:
 
-Explanation of trunc refinement.
+\begin{minted}{mlir}
+// Declare any constants used in the semantics
+%0 = smt.forall {
+^bb0(%src_lhs : !smt.any_type, %src_rhs : !smt.any_type, 
+    %trg_lhs : !smt.any_type, %trg_rhs : !smt.any_type):
 
-Pros and cons (arithmetic is clear, comparisons become much harder to handle).
+  // Evaluate operations to obtain results
+  %src_result = "SRC_SEMANTICS"(%src_lhs, %src_rhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.any_type
+  %trg_result = "TRG_SEMANTICS"(%trg_lhs, %trg_rhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.any_type
 
-Implement and test both refinements.
+  // Evaluate if operands refine source operands
+  %lhs_precondition = "CHECK_REFINEMENT"(%trg_lhs, %src_lhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.bool
+  %rhs_precondition = "CHECK_REFINEMENT"(%trg_rhs, %src_rhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.bool
+  %valid_inputs = smt.and %lhs_precondition, %rhs_precondition
 
-\subsection{Multithreaded Iterative Deepening}
+  // Evaluate if result refine source result
+  %valid_output = "CHECK_REFINEMENT"(%trg_result, %src_result) 
+    : (!smt.any_type, !smt.any_type) -> !smt.bool
 
-Enumerate all input instructions, and wrap them into functions. Each individual instruction
-is can be handled individually.
+  // The refinement relation
+  %is_refined = smt.implies %valid_inputs, %valid_output
+  smt.yield %is_refined : !smt.bool
+}
+\end{minted}
 
-For each input instruction perform iterative deepening search of the program space.
+We next define what \texttt{CHECK\_REFIMENT} is a placeholder for. In this work we analyze two different 
+refinement schemes for our instructions that have different benefits and drawbacks. In the following paragraphs
+we describe what the two identified refinements are, and their primary differences and use cases.
 
-Store the results, with additional data for further analysis.
+\subsubsection{Sign extension refinement}
+
+In this refinement scheme, we consider a register to refine a value, if the sign extension 
+of the value to 64 bits equals the value held within the registers (the bitvectors match).
+If the source value is unsigned, we use the zero extension instead. However this leave the
+values which don't have a specified signedness up to interpretation. In our case we use the
+sign extension, although this is an arbitrary choice, as both options yield similar drawbacks.
+This approach makes translating comparisons simpler, as we don't have to extend the values
+to 64 bits, but it is worse at handling overflows. A more detailed analysis of the effects 
+of these refinements on instruction lowerings is found in \emph{citation from eval chapter needed}.
+
+Formally, when evaluating SMT queries we have the following sequence of SMT operations 
+(written here in the SMT dialect) to evaluate whether a register refines an integer type 
+value (using 32 bits as an example). In the semantics we use for the LLVM dialect, integer 
+values are pairs composed of their value and a bool, which is true if the value is poisoned.
+
+\stefan{Should I explain LLVM semantics in more detail somewhere in preparation?}
+
+\begin{minted}{mlir}
+//Here %int repesents an integer of 32 bits and %reg the register values
+%value = smt.utils.first %int : (!smt.utils.pair) -> !smt.bv<32>
+%poison = smt.utils.second %int : (!smt.utils.pair) -> !smt.bool
+%ext_value = smt.bv.sign_extend %value : (!smt.bv<32>) -> !smt.bv<64>
+%is_eq = smt.eq %ext_value %reg : (!smt.bv<64>, !smt.bv<64>) -> !smt.bool
+%not_poison = smt.not %poison : (!smt.bool) -> !smt.bool
+%refines = smt.and %not_poison, %is_eq : (!smt.bool, !smt.bool) -> !smt.bool
+\end{minted}
+
+\subsubsection{Truncation refinement}
+
+This refinement scheme takes the opposite approach, where a register refines a value if 
+the truncation of the register to the values bitwidth is equal to that value (i.e the lower
+bits of the register are the same as the value in question). This eliminates makes arithmetic
+easier, as overflow is handled by the refinement (as the overflow would affect the higher bits
+which are truncated when checking for refinements). However comparisons become harder to handle
+as the higher bits of the operands could take any value and still be a valid refinement, so
+in our lowering we will need to truncate the arguments before performing any comparison between
+them.
+
+As an example consider the following translation from:
+\begin{minted}{mlir}
+%res = llvm.icmp "slt" arg0, arg1 : i8 
+\end{minted}
+To:
+\begin{minted}{mlir}
+%res = riscv.slt arg0, arg1 : (!riscv.reg, !riscv.reg) -> !riscv.reg
+\end{minted}
+
+Because \texttt{arg0} and \texttt{arg1} need to refine \texttt{i8} they could feasibly take the
+values 256 ($2^8 + 0$) and 1. The result of the comparison would be false, however the values are
+valid refinements of 0 and 1, which would yield a true result in the source operation. Thus we can say 
+that the translation is invalid.
+
+Formally, we use the following sequence of SMT operations to evaluate if a register refines an integer 
+value (using 32 bits here as an example):
+\stefan{Maybe I should give a brief overview of the dialect instructions in an Appendix}
+\begin{minted}{mlir}
+//Again, %int repesents an integer of 32 bits and %reg the register values
+%value = smt.utils.first %int : (!smt.utils.pair) -> !smt.bv<32>
+%poison = smt.utils.second %int : (!smt.utils.pair) -> !smt.bool
+%trunc_value = smt.bv.extract %reg from 0 : (!smt.bv<64>) -> !smt.bv<32>
+%is_eq = smt.eq %value %trunc_value : (!smt.bv<32>, !smt.bv<32>) -> !smt.bool
+%not_poison = smt.not %poison : (!smt.bool) -> !smt.bool
+%refines = smt.and %not_poison, %is_eq : (!smt.bool, !smt.bool) -> !smt.bool
+\end{minted}
+
+\subsection{Reconstruction}
+
+After confirming that a lowering is correct we first need to obtain a valid source and target programs for it.
+Since we are using \texttt{synth.op} operations in our search to allow for the generation of arbitrary constants
+we must then proceed to reconstruct the target program. When the lowering is found the SMT solver provides a 
+model for the constant values it used to fill in the holes form the synthetic operation, however some setup
+needs to be done beforehand so that we associate the values provided by the model, to the correct holes left
+by the \texttt{synth.op} operations. Thus, when lowering synthetic operations, we first give unique names
+to all of the constants and we include some additional operations that carry some information relevant for 
+reconstruction, as can be seen here:
+
+\begin{minted}[escapeinside=||]{mlir}
+|From:|
+%res = "synth.op"(%op) <op_name = source_op> {attr : attr_type, ...} 
+    : operand_types -> result_type
+
+|To:| 
+//Also keep track of the connection between %name_with_id and the synth.op
+%name_with_id = smt.declare_const : () -> !lowered_attr_type
+%conv = synth.conversion %name_with_id : !attr_type
+%from = synth.from_value %conv {cst_value : "name_with_id"}
+//Repeat for every other attribute
+//Lower the source_op, using the attributes above
+\end{minted}
+
+When obtaining constant from the model they will be associated with the unique name we have given attribute
+then we can walk the program searching for all the \texttt{synth.from\_value} operations, which will give
+us the relevant \texttt{synth.conversion} operations, which contain the relevant metadata for the reconstruction. 
+After converting the bitvector obtained from the model into its integer type we can simply construct the 
+operation which the synthetic one is trying to emulate. \\
+
+\input{synth_op_reconstruction.tex}
 
 \subsection{Conversion to PDL}
 The functions obtained from the enumerative search are then converted into PDL Patterns.
