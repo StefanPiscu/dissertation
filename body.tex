@@ -118,7 +118,6 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 
 \subsection*{LLVM IR}
 
-%\fehr{Sentence is broken}
 LLVM is a set of compiler and technologies that leverages a language-independent 
 intermediate representation (LLVM IR). The IR serves as a portable high level assembly language
 that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust,
@@ -862,6 +861,8 @@ arbitrary programs.
 
 \subsection{Multithreaded Enumeration}
 
+\fehr{Explain that we generate a lowering by lowering each operation. The readers are not necessarily
+familiar, and it is always better to explain what you are doing.}
 To efficiently make use of the available compute we exploit the inherent division of the lowering
 task, on an instruction by instruction basis. Thus, we use an executor pool to run many tasks in 
 parallel and create a new job for every single operation our source set. The highly parallelisable
@@ -877,6 +878,11 @@ as we had previously failed finding a lowering with any smaller program.
 
 \subsection{Refinements}
 
+\fehr{You need to make it clear how much this is your contribution, because to me this feels like it should be
+in the preparation instead?}
+
+\fehr{Maybe connect it to the previous section as well? Mentionning that now that you have the enumeration,
+you need to be able to validate the generated programs. It should help the reader a bit more.}
 The next step in the backend synthesis process involves confirming whether the target program is a 
 refinement of the source. After lowering the program to their semantics in the SMT dialect we construct
 an SMT expression that is true if and only if our refinement relation below holds for all possible inputs.
@@ -927,6 +933,12 @@ We next define what \texttt{CHECK\_REFIMENT} is a placeholder for. In this work 
 refinement schemes for our instructions that have different benefits and drawbacks. In the following paragraphs
 we describe what the two identified refinements are, and their primary differences and use cases.
 
+\fehr{Maybe explain a bit more the problem here? That you have values of type `i16` for instance and
+you need to "map" them to register values. And explain here that unsigned/signed values are fine, it's just
+signless values. Explain the two choices at once, instead of separately}
+\fehr{Then, you can explain poison in a different paragraph, since it's orthogonal}
+
+\fehr{I would make this a "paragraph" command rather than a subsubsection}
 \subsubsection{Sign extension refinement}
 
 In this refinement scheme, we consider a register to refine a value, if the sign extension 
@@ -944,6 +956,8 @@ value (using 32 bits as an example). In the semantics we use for the LLVM dialec
 values are pairs composed of their value and a bool, which is true if the value is poisoned.
 
 \stefan{Should I explain LLVM semantics in more detail somewhere in preparation?}
+\fehr{Yes, at least poison semantics, and probably signed/unsigned/signless integers (almost everyone
+uses signless ones at least.)}
 
 \begin{minted}{mlir}
 //Here %int repesents an integer of 32 bits and %reg the register values
@@ -994,6 +1008,9 @@ value (using 32 bits here as an example):
 \end{minted}
 
 \subsection{Reconstruction}
+
+\fehr{I think this would benefit a lot from an example of a concrete rewrite, showing where the synth op
+is added, and what the reconstruction looks like. Also, shouldn't this be in the preparation?}
 
 After confirming that a lowering is correct we first need to obtain a valid source and target programs for it.
 Since we are using \texttt{synth.op} operations in our search to allow for the generation of arbitrary constants
