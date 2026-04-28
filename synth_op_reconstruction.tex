@@ -1,0 +1,33 @@
+\begin{tikzpicture}[
+    node distance=1.5cm and 0.4cm,
+    base-node/.style = {rectangle, draw=black, rounded corners, text centered, font=\footnotesize, minimum height=1.6cm, text width=2.2cm},
+    lowering-node/.style = {base-node, fill=blue!15},
+    recon-node/.style = {base-node, fill=orange!15}
+]
+
+\node (orig_ir) [lowering-node] {Original IR\\with \texttt{synth.op}};
+\node (prepare) [lowering-node, right=of orig_ir] {Assign unique\\names to\\constants};
+\node (generate) [lowering-node, right=of prepare] {Generate\\lowered ops\\\& metadata};
+\node (lowered_ir) [lowering-node, right=of generate] {Lowered IR};
+\node (smt_eq) [lowering-node, right=of lowered_ir] {SMT equation};
+
+
+\node (model) [recon-node, below=1.5cm of orig_ir] {SMT Model};
+\node (solution) [recon-node, right=of model] {Obtain\\bitvector for \\unique named\\ constants};
+\node (walk_ir) [recon-node, right=of solution] {Walk IR for\\\texttt{synth.}\\\texttt{from\_value}};
+\node (construct_op) [recon-node, right=of walk_ir] {Convert bitvector to integer};
+\node (final_ir) [recon-node, right=of construct_op] {Construct Final IR};
+
+\draw [thick, ->, >=stealth] (orig_ir) -- (prepare);
+\draw [thick, ->, >=stealth] (prepare) -- (generate);
+\draw [thick, ->, >=stealth] (generate) -- (lowered_ir);
+\draw [thick, ->, >=stealth] (lowered_ir) -- (smt_eq);
+
+\draw [thick, ->, >=stealth] (smt_eq.south) -- ++(0,-0.6cm) -| (model.north);
+
+\draw [thick, ->, >=stealth] (model) -- (solution);
+\draw [thick, ->, >=stealth] (solution) -- (walk_ir);
+\draw [thick, ->, >=stealth] (walk_ir) -- (construct_op);
+\draw [thick, ->, >=stealth] (construct_op) -- (final_ir);
+
+\end{tikzpicture}
