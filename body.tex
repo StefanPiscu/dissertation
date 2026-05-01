@@ -327,7 +327,7 @@ the SMT solver fills with values that can make the programs equivalent.
 In this work, we establish some semantics for RISC-V, so we can talk about the correctness
 of a lowering. We take as a source of truth, semantics defined in the sail language \cite{sail-paper}.
 Because we will be using these semantics to automatically generate proofs using traditional tools
-like SAT and SMT solvers we these to be bitblastable, i.e the bit vector expressiosn can be converted
+like SAT and SMT solvers we these to be bitblastable, i.e the bit vector expression can be converted
 into expressions about individual bits before being passed into these tools. In particular, we 
 use hand-written semantics in Lean, that are proven equivalent to the source of truth. \cite{riscv-lean}
 %
@@ -445,6 +445,8 @@ RISC-V dialect.
 search for a valid transformation, to the construction of a PDL pattern for it, that will be used
 as part of the lowering.
 \end{itemize}
+
+\stefan{I should create a diagram that shows a big picture of how the project works}
 
 \section{Base RISC-V to SMT Semantics}
 \label{RISC-V to SMT}
@@ -1044,18 +1046,162 @@ operation which the synthetic one is trying to emulate. \\
 \input{synth_op_reconstruction.tex}
 
 \subsection{Conversion to PDL}
-The functions obtained from the enumerative search are then converted into PDL Patterns.
 
-Explain the conversion process, with an example.
+At this point our tool can succesfully identify correct RISC-V lowerings for our target LLVM dialect
+subset. We then make use of PDL by converting the IR programs we have into PDL patterns. To achive 
+this we must first decompose the individual source and target programs into their components (attributes, 
+operands, results, types and operations) and create patterns for them. Then, we than simply construct
+a PDL rewrite rule that the input pattern can be replaced with the output. We take a look of how
+the lowering from \texttt{llvm.icmp "slt"} using \texttt{i64} to \texttt{riscv.slt} gets expressed
+as a PDL pattern.
 
-\section{Pruning the searchspace}
-This section will detail attempts at optimization that will hopefully succeed.
+\begin{minted}[escapeinside=||]{mlir}
+|The source program:|
+%res = llvm.icmp "slt" %arg0 %arg1 : i64 
 
-I'll add more in this section, after implementing heuristic search.
+|Becomes:|
+%type = pdl.type : i64
+%op1 = pdl.operand : %type
+%op2 = pdl.operand : %type
+//The predicate is represented as an i64
+%pred = pdl.attribute = 4 : i64  // "slt"
+%res_type = pdl.type : i1
+%operation = pdl.operation "llvm.icmp" (%op1, %op2 : !pdl.value, !pdl.value) 
+    {"predicate" = %pred} -> (%res_type : !pdl.type)
+%result = pdl.result 0 of %operation
+\end{minted}
 
+\begin{minted}[escapeinside=||]{mlir}
+|Then, the target program:|
+%res = riscv.slt %arg0 %arg1 : !riscv.reg
+
+|Becomes:|
+%type = pdl.type : !riscv.reg
+%op1 = pdl.operand : %type
+%op2 = pdl.operand : %type
+%res_type = pdl.type : !riscv.reg
+%81 = pdl.operation "riscv.slt" (%op1, %op2 : !pdl.value, !pdl.value) 
+    -> (%type : !pdl.type)
+%result = pdl.result 0 of %operation
+\end{minted}
+
+When writing the transformation as a rewrite we refer to the operands of the source operation, this
+means that they will have had to been lowered by a different pattern for the final program to type check.
+
+\begin{minted}[escapeinside=||]{mlir}
+%type = pdl.type : i64
+%op1 = pdl.operand : %type
+%op2 = pdl.operand : %type
+%pred = pdl.attribute = 4 : i64  // "slt"
+%res_type = pdl.type : i1
+%src_oper = pdl.operation "llvm.icmp" (%op1, %op2 : !pdl.value, !pdl.value) 
+    {"predicate" = %pred} -> (%res_type : !pdl.type)
+%src_result = pdl.result 0 of %src_oper
+pdl.rewrite %src_oper {
+  %type_2 = pdl.type : !riscv.reg
+  %res_type_2 = pdl.type : !riscv.reg
+  %trg_oper = pdl.operation "riscv.slt" (%op1, %op2 : !pdl.value, !pdl.value) 
+      -> (%type : !pdl.type)
+  %trg_result = pdl.result 0 of %trg_oper
+  pdl.replace %src_result with %trg_result
+}
+\end{minted}
+
+With this pattern the result of the  \texttt{llvm.icmp "slt"} operation gets replaced with the result
+of the \texttt{riscv.slt} operation, and thus is used as part of subsequent lowerings, i.e the source
+operands of integer types, get replaced with registers. This allows us to apply all of our patterns, which 
+we converted from the lowerings we found as part of our enumerative synthesis.
+%\section{Pruning the searchspace}
+
+\clearpage
 \section{Repository Overview}
 
-This page will consist of a table of all the relevant files, with a short description.
+The project was built on top of the xdsl-smt and mlir-fuzz open source project. Thus,
+a comprehensive overview of the entire repository would span many pages and be partly 
+unnecesary to understand the project. Thus we provide an summary of the files that 
+are relevant to the project along with a short description of each file's purpose and 
+content, along with any relevent contribution the author made. Note that, while some 
+files don't have any notable contribution, the author needed to gain a good 
+understanding of  content to succesfully develop this project, as such we feel their
+inclusion in the repository overview is important.
+
+The project spans two different repositories mlir-fuzz and xdsl-smt, the former being
+included as a git submodule into the latter. The files that are relevant to this project
+for the mlir-fuzz repository can be seen in Table \ref{tab:mlir_fuzz_overview}, while
+the overview of the xdsl-smt project is available in Table \ref{tab:xdsl_smt_overview}.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\label{tab:mlir_fuzz_overview}
+\caption{mlir-fuzz Repository Overview}
+\begin{tabular}{lp{7cm}p{5cm}}
+\toprule
+\textbf{Directory} & \textbf{File \& Description} & \textbf{Contribution} \\
+
+\midrule
+\multirow{2}{*}{\texttt{dialects/}} 
+& \textbf{riscv.mlir} ---  IRDL implementation of the RISC-V dialect & Fully implemented \\
+& \textbf{llvm.mlir} --- IRDL implementation of LLVM dialect & --- \\
+\midrule
+\multirow{2}{*}{\texttt{lib/}} 
+& \textbf{CLITool.cpp} --- Configurations for various dialects & Added \texttt{riscv} configuration \\
+& \textbf{GeneratorInfo.cpp} --- Contains functions for generating IR programs and operations & Added function for generating synthetic operations \\
+\midrule
+\multirow{2}{*}{\texttt{tools/}} 
+& \textbf{mlir\_enumrate.cpp} --- Tool for enumerating arbitrary mlir programs & Added \texttt{riscv} configuration \\
+& \textbf{superoptimizer.cpp} --- Tool for enumerating mlir programs that have a type compatible with a source program & Allowed for generation of synth ops, added \texttt{riscv} configuration \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\label{tab:xdsl_smt_overview}
+\caption{xdsl-smt Repository Overview}
+\begin{tabular}{lp{7cm}p{5cm}}
+\toprule
+\textbf{Directory} & \textbf{File \& Description} & \textbf{Contribution} \\
+
+\midrule
+\multirow{1}{*}{\texttt{dialects/}} 
+& \textbf{synth\_dialect.py} --- Implementation of the synth utility dialect & Added \texttt{synth.op} \\
+
+\midrule
+\multirow{2}{*}{\texttt{semantics/}} 
+& \textbf{riscv\_semantics.py} --- Semantics for the RISC-V dialect & Fully implemented \\
+& \textbf{refinements.py} --- Value refinements and functions that implement the refinement relation in the smt dialect & Added integer to register refinement semantics \\
+
+\midrule
+\multirow{3}{*}{\texttt{\scriptsize utils/proofs/}} 
+& \textbf{lean\_printer.py} --- Prints blocks using the SMT dialect as lean functions & Fully implemented \\
+& \textbf{print\_equivalence\_theorems.py} --- Prints equivalence theorems for all the RISC-V instructions which have implemented semantics & Fully implemented \\
+& \textbf{riscv\_instructions\_smt.py} --- Lowers RISC-V instructions to SMT dialect blocks & Fully implemented \\
+
+\midrule
+\multirow{1}{*}{\texttt{\scriptsize superoptimization/}} 
+& \textbf{synthesizer.py} --- Given an input and output program, lowers them and attempts to find 
+consants that achieve equivalence between them & Added semantics for synth operations, as well as 
+reconstruction of actual operations from synth ones\\
+
+\midrule
+\multirow{2}{*}{\texttt{cli/}} 
+& \textbf{superoptimize.py} \& \newline \textbf{synthesize\_lowering.py} --- Tools used previously to 
+search and find for lowerings from a dialect to another & Minor modifications to integrate changes made to other files \\
+& \textbf{parallel\_synthesize\_lowerings.py} --- Tool to search for a lowering from one dialect to another, doing so in parallel for
+each instruction & Fully implemented \\
+
+\midrule
+\multirow{2}{*}{\texttt{utils/}} 
+& \textbf{func\_to\_pdl.py} --- Utility to convert a function operation into its PDL components & --- \\
+& \textbf{convert\_lowering\_to\_pdl.py} --- Tool to convert a lowering into a series of PDL Patterns & Fully implemented \\
+
+\bottomrule
+\end{tabular}
+\end{table}
+
 
 \clearpage
 \chapter{Evaluation}
