@@ -286,7 +286,6 @@ aren't the focus of the project.
 
 \section{Superoptimization and Lowering Synthesis}
 
-%\fehr{You talk about superoptimization but the section is about lowering synthesis.}
 As mentioned in \ref{background}, superoptimization is a technique where a compiler 
 attempts to find the optimal sequence of instructions that has the same semantics as a source
 sequence. One technique used to do this is via exhausting search over the program space and boolean 
@@ -323,7 +322,6 @@ the SMT solver fills with values that can make the programs equivalent.
 
 \section{Formal Verification}
 
-%\fehr{People might not know what bitblastable means here.}
 In this work, we establish some semantics for RISC-V, so we can talk about the correctness
 of a lowering. We take as a source of truth, semantics defined in the sail language \cite{sail-paper}.
 Because we will be using these semantics to automatically generate proofs using traditional tools
@@ -375,10 +373,10 @@ posing which questions are to be asked, and evaluated in the project.}
 \subsection{Development Model}
 
 Due to the novel nature of the project, development followed the spiral model, which focuses on 
-iteration and risk assesment.
+iteration and risk assessment.
 %
 Therefore a working prototype was implemented with some limited scope. Upon completion requirments
-were be reevaluated and the scope was apropriatly expanded, and the process was repeated. 
+were be reevaluated and the scope was appropriately expanded, and the process was repeated. 
 The project went through the following major iteration cycles:
 \begin{enumerate}
 
@@ -402,7 +400,7 @@ Throughout the project I've extensively used the MLIR and xDSL frameworks, while
 xdsl-smt project (containing the majority of the project's code) and mlir-fuzz (containg the 
 code for program enumeration and exhaustive search).
 %
-Due to the open source nature of the projectgit and GitHub were used for source control.
+Due to the open source nature of the project git and GitHub were used for source control.
 
 \subsection{Development Environment}
 This subsection will include the specs of my laptop and the PC I'm doing evaluation on.
@@ -430,21 +428,21 @@ Moreover I had no prior knowledge of the xdsl-smt and mlir-fuzz projects before 
 \label{ch:impl}
 This project implements the systems necessary to perform lowering synthesis from the 
 LLVM IR dialect of MLIR to the RISC-V dialect present in xdsl-smt.
-
-\fehr{Probably keep this as a paragraph instead of a bullet point list}
-\begin{itemize}
-\item In section \ref{RISC-V to SMT} we present an overview of converting RISC-V dialect operations into 
+%
+In section \ref{RISC-V to SMT} we present an overview of converting RISC-V dialect operations into 
 their underlying SMT semantics using the smt dialect.
-\item To ensure the correctness of our semantics we built a tool to generate Lean theorems
-of equivalece between our selected source of truth and our implementation, which are then
+%
+To ensure the correctness of our semantics we built a tool to generate Lean theorems
+of equivalence between our selected source of truth and our implementation, which are then
 checked for correctness by the proof-assistant. This is covered in section \ref{lean theorems}.
-\item We then present (in section \ref{enumeration}) the modificatioes made to the enumerator that were made to allow us
+%
+We then present (in section \ref{enumeration}) the modificatioes made to the enumerator that were made to allow us
 to exhaustively search the RISC-V program space and handle the way attributes are used in the
 RISC-V dialect.
-\item Then, in section \ref{backend synthesis}, we cover the backend synthesis process, from the 
+%
+Then, in section \ref{backend synthesis}, we cover the backend synthesis process, from the 
 search for a valid transformation, to the construction of a PDL pattern for it, that will be used
 as part of the lowering.
-\end{itemize}
 
 \stefan{I should create a diagram that shows a big picture of how the project works}
 
@@ -461,20 +459,19 @@ the RISC-V assmenbly.
 
 There are only a few types of values we will encounter in RISC-V code, given we are working 
 with values in CPU registers, and encoded within instructions they can all be represented as 
-bitvectors of apropriate sizes, however they will need to be extended to the same size for 
+bitvectors of appropriate sizes, however they will need to be extended to the same size for 
 our smt operations. Register values will be encoded as 64-bit bitvectors, and the 12 bit
 immediates and 6 bit shift value attributes that appear in the RISC-V instructions are 
 extended to 64 bits to operate together with the registers.
 
-\subsection{Handling diffrent Instruction Types}
+\subsection{Handling different Instruction Types}
 
-RISC-V instructions can be divided into a few diffrent types, based on their structure.
+RISC-V instructions can be divided into a few different types, based on their structure.
 Therefore we can extract the values, apply the appropriate conversion, then use the values
 for the SMT semantics.
+%
+In our implementation we handle the following instruction categories: 
 
-In our implemntation we handle the following instruction categories: 
-
-\fehr{Either expand these paragraphs to 2-3 sentences, or merge these into a single paragraph}
 \paragraph{Register-Register Operations} 
 We can directly get the values of the registers and convert them to 64 bit bitvectors.
 
@@ -548,13 +545,12 @@ Across different instruction types we encounter instructions with the same under
 Take for example \texttt{riscv.add} and \texttt{riscv.addi}. Their behaviour can be expressed as a single
 \texttt{smt.bv.add} opreration on the relevant values. So, as long as we are careful on how we extract
 the values from each instruction we can exploit this similarity so have cleaner and more concise code.
-
+%
 Moreover, we also see how many semantics would only differ by the smt operation they perform.
 Thus we recognize the following categories:
 
-\fehr{Same here about merging paragraphs or expanding them}
-\fehr{It would be nice to have a table the number of instructions in each category.
-Possibly the list of instructions per category as well if it fits?}
+\stefan{Make a list of instructions, detailing some information about them (including their type), and 
+add it to an appendix, reference the appendix here}
 
 
 \paragraph{Trivial Operations}
@@ -593,7 +589,6 @@ Some instructions have completely custom semantics, however with careful impleme
 they plugged into the existing instruction types. For example the the \texttt{slli.uw} instruction
 which has the following semantics, requiring a trunctation followed by a zero extension:
 
-%\fehr{Here it would be really nice to have an example for instance.}
 \begin{minted}{mlir}
 %trunc_reg = smt.bv.extract %reg : (!smt.bv<64>) -> !smt.bv<32>
 %ext_reg = smt.bv.extend %trunc_reg : !smt.bv<32> -> !smt.bv<64>
@@ -611,9 +606,7 @@ above for every operation and SSA value. After that, I register my lowerings to 
 a lowering pass is created that recursively lowers all of the instructions from a source program
 into a program using the smt dialect.
 
-%\fehr{Maybe a paragarph or a diagram to explain how this actually works?}
-%Agreed, will do diagram later
-
+\stefan{Make diagram showing the lowering process}
 \begin{verbatim}
           Diagram showing the lowering process 
 \end{verbatim}
@@ -753,7 +746,6 @@ Where \emph{\texttt{start}} and \emph{\texttt{end}} are attributes of the source
 We use the patterns above to recursively lowers all operations from the semantics block into an 
 appropriate Lean function.
 
-%\fehr{bv\_decide is creating a proof, not really a theorem? Maybe "Generating automatically proven theorems"?}
 \subsection{Proving theorems with bv\_decide}
 
 After succesfully obtaining a lean function for the RISC-V instructions semantics we formulate 
@@ -799,10 +791,20 @@ irdl.operation @add {
 
 \subsection{Synthetic Operations}
 
-Many RISC-V operations use attributes to encode constants. During our synthesis process we want
-to be able to infer these constants, therefore when enumerating we are going to replace operations
-that use attributes with a `synthetic form'. These \texttt{synth.op}s contain the information to build 
-an instance of the underlying operation.
+Many RISC-V operations use attributes to encode constants. Take for example the average "riscv.addi"
+operation which contains a 12 bit immediate. When synthesizing a backend we want to be able to 
+use such immediates to our advantage, as that increases the amount of behaviours we can synthesize,
+however enumerating a different program for all $2^12$ possible values of our constant would be too computationally intensive.
+
+\begin{minted}{mlir}
+%res = riscv.addi %arg 42 : !riscv.reg -> riscv.reg
+\end{minted}
+%
+Therefore during our synthesis process we want the ability to infer constants using the SMT solver's
+capability. To achieve this during enumeration we are going to replace operations that use attributes 
+with a `synthetic form'. These \texttt{synth.op}s contain the information to build an instance of 
+the underlying operation, but they can be lowered differently to allow the SMT semantics
+to have an ``unknown'' variable that a solver can find a solution for.
 
 \begin{Verbatim}[commandchars=\\\{\}, fontsize=\small]
 \textcolor{red}{%res} = "synth.op"(\textcolor{green!50!black}{%op...}) <\textcolor{blue}{op_name = \emph{name}}> \{\textcolor{orange}{attr : type, ...}\} : \textcolor{teal}{(!type)} -> \textcolor{magenta}{!type}
@@ -828,8 +830,6 @@ irdl.operation @addi attributes {synth} {
 }
 \end{minted}
 
-\fehr{Maybe first explain why we need synthetic operations? What is the problem you are
-trying to solve here?}
 Synthetic operation allow for the usage of arbitrary smt constants for the values that would
 normally be represented by the attributes. For example we have the following lowering from
 a synthetic add to the semantics, where we use a \texttt{smt.declare\_const} instead of the
@@ -840,8 +840,6 @@ attribute.
     : (!riscv.reg) -> !riscv.reg
 \end{minted}
 To:
-\stefan{Don't know if I should tackle reconstruction here on in the next chapter, for now I'll
-leave a comment here and explain later in the next chapter, since this one is mostly about enumeration}
 \begin{minted}{mlir}
 %imm = smt.declare_const : () -> !smt.bv<12>
 //... (some additional operations used to reconstruct the transformation)
@@ -863,8 +861,7 @@ arbitrary programs.
 
 \subsection{Multithreaded Enumeration}
 
-\fehr{Explain that we generate a lowering by lowering each operation. The readers are not necessarily
-familiar, and it is always better to explain what you are doing.}
+\stefan{Elaborate on how a lowering gets generated in the first place}
 To efficiently make use of the available compute we exploit the inherent division of the lowering
 task, on an instruction by instruction basis. Thus, we use an executor pool to run many tasks in 
 parallel and create a new job for every single operation our source set. The highly parallelisable
@@ -880,11 +877,10 @@ as we had previously failed finding a lowering with any smaller program.
 
 \subsection{Refinements}
 
-\fehr{You need to make it clear how much this is your contribution, because to me this feels like it should be
-in the preparation instead?}
+\stefan{Present how a refinement is handled in preparation, using poison as an example, move the
+section below there}.
 
-\fehr{Maybe connect it to the previous section as well? Mentionning that now that you have the enumeration,
-you need to be able to validate the generated programs. It should help the reader a bit more.}
+\stefan{mention the previous step}
 The next step in the backend synthesis process involves confirming whether the target program is a 
 refinement of the source. After lowering the program to their semantics in the SMT dialect we construct
 an SMT expression that is true if and only if our refinement relation below holds for all possible inputs.
@@ -938,10 +934,10 @@ we describe what the two identified refinements are, and their primary differenc
 \fehr{Maybe explain a bit more the problem here? That you have values of type `i16` for instance and
 you need to "map" them to register values. And explain here that unsigned/signed values are fine, it's just
 signless values. Explain the two choices at once, instead of separately}
-\fehr{Then, you can explain poison in a different paragraph, since it's orthogonal}
+\stefan{Be more explicit on where the division between the two refinement types is, maybe with a short
+diagram, essentially add an introduction to the next two pragraph section}
 
-\fehr{I would make this a "paragraph" command rather than a subsubsection}
-\subsubsection{Sign extension refinement}
+\paragraph{Sign extension refinement}
 
 In this refinement scheme, we consider a register to refine a value, if the sign extension 
 of the value to 64 bits equals the value held within the registers (the bitvectors match).
@@ -971,7 +967,9 @@ uses signless ones at least.)}
 %refines = smt.and %not_poison, %is_eq : (!smt.bool, !smt.bool) -> !smt.bool
 \end{minted}
 
-\subsubsection{Truncation refinement}
+\stefan{Give example of where this is worse.}
+
+\paragraph{Truncation refinement}
 
 This refinement scheme takes the opposite approach, where a register refines a value if 
 the truncation of the register to the values bitwidth is equal to that value (i.e the lower
@@ -1011,8 +1009,9 @@ value (using 32 bits here as an example):
 
 \subsection{Reconstruction}
 
-\fehr{I think this would benefit a lot from an example of a concrete rewrite, showing where the synth op
-is added, and what the reconstruction looks like. Also, shouldn't this be in the preparation?}
+\stefan{Present current world (technically preparation, but I think it would make more sense here), where
+we use synth constants for specific operation. Then proceed with the explanation of how reconstruction is done
+for synth ops. Provide a basic example.}
 
 After confirming that a lowering is correct we first need to obtain a valid source and target programs for it.
 Since we are using \texttt{synth.op} operations in our search to allow for the generation of arbitrary constants
