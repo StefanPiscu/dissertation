@@ -12,10 +12,9 @@ level optimizations (like instruction selection) be handled close to the ISA.
 There is a lot of work needed to optimize these IRs but if programs can be proven equivalent 
 (for example, by leveraging formal semantics) a technique arises called superoptimization. 
 By enumerating all programs of a small size we may find a shorter program that is equivalent 
-to a larger one  a larger one\textsuperscript{citation needed}. This technique can be applied 
-across IRs, the target could even be an ISA. Therefore we can use superoptimization to find lowerings 
-from a source IR (like LLVM IR) to an assembly language like RISC-V. Hence I'll refer to 
-this as backend synthesis.
+to a larger one a larger one. This technique can be applied  across IRs, the target could even be 
+an ISA. Therefore we can use superoptimization to find lowerings from a source IR (like LLVM IR) to 
+an assembly language like RISC-V. Hence I'll refer to this as backend synthesis.
 
 \section{Motivation}
 
@@ -55,25 +54,24 @@ and a more performant backend, all while being proven correct.
 \section{Approach}
 
 For easier development, prototyping and experimenting I will be using the 
-xDSL\textsuperscript{citation needed} framework which contains an implementation
+xDSL\textsuperscript{\cite{xdsl-smt}} framework which contains an implementation
 of a RISC-V dialect, as well as making use of the infrastructure in the open source project 
 xdsl-smt, an implementation of SMTLib for xDSL, and mlir-fuzz, which is used for 
 enumerating mlir programs. 
 
-The project consists \stefan{WIP} of a series of contributions to these projects to add
+The project consist of a series of additions to these projects which 
 lower the RISC-V dialect to the smt dialect and formally prove equivalence to some 
 authoritative RISC-V semantics, enhance mlir-fuzz to generate RISC-V programs, then run
 the enumerative synthesis, generating a backend for LLVM IR, evaluate the coverage and 
 performance of the synthesized lowering.
 
-Following this the aim is to experiment with various optimizations to increase synthesis
-speed, increase coverage or performance.\stefan{Experiments and optimizations are WIP}
+Following this the aim is to evaluate the effectiveness of this technique, as well 
+as their feasability for large scale applications.
 
 \section{Previous Work}
-This project is based of work done by my supervisor Mathieu Fehr \stefan{there should
-probably be more credits here} on xdsl-smt, and mlir-fuzz. It uses open source 
-lean semantics\textsuperscript{citation needed} proven equivalent to the authoritative SAIL 
-semantics\textsuperscript{citation needed}. 
+This project is based of work done by my supervisor Mathieu Fehr on xdsl-smt, and mlir-fuzz. It uses open source 
+lean semantics\textsuperscript{\cite{riscv-lean}} proven equivalent to the authoritative SAIL 
+semantics\textsuperscript{\cite{sail-paper}}. 
 Superoptimization is a well known technique utilized successfully in projects such as
 Souper \cite{souper}.
 
@@ -86,7 +84,7 @@ Souper \cite{souper}.
 MLIR (Multi-Level Intermediate Representation) is an extensible compiler framework that allows
 users to define IRs named dialects. Developed as a sub-project of LLVM it aims to facilitate the 
 construction of domain specific compilers and improve compilation for heterogeneous computing.
-One feature worth highlighting is the iteroperability of dialects, allowing any dialect to be
+One feature worth highlighting is the interoperability of dialects, allowing any dialect to be
 used within any MLIR program.
 
 
@@ -135,6 +133,14 @@ func.func @main(%arg0 : i64, %arg1 : i64) -> i1 {
  }
 \end{minted}
 
+\subsection*{Arith}
+
+Arith is a dialect available in MLIR, that also has plenty of support within xdsl-smt. For our purpose
+of the arithmetic subset the arith dialect is identical to LLVM IR. Therefore to ease development
+and evaluation already existing tools for the arith dialect (like a complete implementation of 
+the semantics and IRDL code), we have used it interchanably with the LLVM dialect. Note that any 
+program using arith can be trivially converted to an llvm program by simply changing the operation
+names, for example from \texttt{arith.cmpi} to \texttt{llvm.icmp}.
 
 \subsection*{RISC-V}
 
@@ -154,7 +160,6 @@ func.func @main(%arg0 : !riscv.reg, %arg1 : !riscv.reg) -> !riscv.reg {
   func.return %1 : !riscv.reg
 }
 \end{minted}
-
 
 \subsection*{IRDL}
 
@@ -237,6 +242,8 @@ into simpler primitives which a SMT solver can work with.
 
 \subsection{Refinements}
 
+\label{prep-refinements}
+
 Dialects don't always work on the same types of values (RISC-V dialect uses registers, and LLVM IR 
 uses integers), checking if a lowering is ``correct'' isn't as easy as saying that for all inputs
 the programs yield the same outputs. In fact we need to introduce the following \emph{refinement}
@@ -245,13 +252,52 @@ relation. A program is a \emph{refinement} of another if the following propositi
 \text{\emph{target inputs refine the source inputs}} \implies \text{\emph{target outputs refine the source outputs}}
 \end{equation*}
 
-This way we can meanigfully talk about such lowerings. Notice that what it means for a value to 
-\emph{refine} another is up to the implementation, however a clear example arises when considering 
-poison in LLVM. Poison is a form of undefined behaviour that propagates, i.e. if any of the operands
-of an operation are posion, than so is the result, while some operations generate poison (like an 
-overflowing integer addition). This is useful because it can be used to optimize certain code sequences,
-as we can always assume that poisoned values are convenable for optimization, since they are the
-result of undefined behaviour. Looking at the following example, which checks if $x+1 > x$:
+Formally this is done by building an expression representative of the refinement relation above 
+making use of the programs semantics and a chosen refinement scheme for the source and target values,
+and then wrapping it in universal quantifiers. 
+We also need to refer to any existentially quantified values that are defined using 
+\texttt{smt.declare\_const}, used to represent arbitrary constants. 
+We do this by moving all such operations before the \texttt{smt.forall} block.
+%
+Thus our SMT expression will look something like the following, where operation and type names are
+placeholders for the types and operation of the programs:
+
+\begin{minted}{mlir}
+// Declare any constants used in the semantics
+%0 = smt.forall {
+^bb0(%src_lhs : !smt.any_type, %src_rhs : !smt.any_type, 
+    %trg_lhs : !smt.any_type, %trg_rhs : !smt.any_type):
+
+  // Evaluate operations to obtain results
+  %src_result = "SRC_SEMANTICS"(%src_lhs, %src_rhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.any_type
+  %trg_result = "TRG_SEMANTICS"(%trg_lhs, %trg_rhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.any_type
+
+  // Evaluate if operands refine source operands
+  %lhs_precondition = "CHECK_REFINEMENT"(%trg_lhs, %src_lhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.bool
+  %rhs_precondition = "CHECK_REFINEMENT"(%trg_rhs, %src_rhs) 
+    : (!smt.any_type, !smt.any_type) -> !smt.bool
+  %valid_inputs = smt.and %lhs_precondition, %rhs_precondition
+
+  // Evaluate if result refine source result
+  %valid_output = "CHECK_REFINEMENT"(%trg_result, %src_result) 
+    : (!smt.any_type, !smt.any_type) -> !smt.bool
+
+  // The refinement relation
+  %is_refined = smt.implies %valid_inputs, %valid_output
+  smt.yield %is_refined : !smt.bool
+}
+\end{minted}
+
+This way we can meaningfully talk about lowerings. Notice that what it means for a value to 
+\emph{refine} another is up to the refinement scheme chosen, however a clear example arises when 
+considering poison in LLVM. Poison is a form of undefined behavior that propagates, i.e. if any of 
+the operands of an operation are poison, than so is the result, while some operations generate 
+poison (like an overflowing integer addition). This is useful because it can be used to optimize 
+certain code sequences, as we can always assume that poisoned values are convenable for optimization, 
+since they are the result of undefined behavior. Looking at the following example, which checks if $x+1 > x$:
 
 \begin{minted}{mlir}
 llvm.func @f(%x: i32) -> i1 {
@@ -272,7 +318,22 @@ llvm.func @f(%x: i32) -> i1 {
 }
 \end{minted}
 
-We can now see an useful refinement for poison: Any value \emph{refines} poison.
+We can now see an useful refinement for poison: any value \emph{refines} poison. But before we explain
+how this is checked we first need to introduce the semantics of integers. Because any value can be poisoned
+each integer is encoded as a pair of its actual value and a boolean representing its poisoned status.
+xdsl-smt has a useful abstraction for this in \texttt{!smt.utils.pair} (the product type), 
+together with \texttt{smt.utils.first} and \texttt{smt.utils.second}, representing the projection of 
+the first and second elements respectively.
+
+Formally, when checking if an integer refines a potentially poisoned integer value we use the following
+expression (using 32 bit integers here as an example):
+\begin{minted}{mlir}
+%value = smt.utils.first %int_or_poison : (!smt.utils.pair) -> !smt.bv<32>
+%poison = smt.utils.second %int_or_poison : (!smt.utils.pair) -> !smt.bool
+%is_eq = smt.eq %value %int : (!smt.bv<32>, !smt.bv<32>) -> !smt.bool
+%not_poison = smt.not %poison : (!smt.bool) -> !smt.bool
+%refines = smt.and %not_poison, %is_eq : (!smt.bool, !smt.bool) -> !smt.bool 
+\end{minted}
 
 \subsection{Verifying rewrites}
 One benefit of having access to SMT semantics for our dialect is leveraging SMT solvers to 
@@ -363,12 +424,19 @@ while enumerating risc-v programs.
 \end{itemize}
 
 \subsection{Evaluation questions}
-\stefan{I'll write this section, after I write evaluation, it should be a mirror
-posing which questions are to be asked, and evaluated in the project.}
+\label{evaluation-questions}
+When evaluating the project we propose the following questions to investigate:
+\begin{itemize}
+\item Was correctness ensured, if so, how? Are there any limitations to this method? Can it be easily expanded 
+upon for other IRs?
+\item How long does it take to synthesize a backend? When does it become prohibitively expensive?
+\item Which instructions were able to be synthesized, which weren't? How much coverage of the target
+subset does this method achieve? Is there a justifications for the instructions were a lowering wasn't found?
+\item How does the lowering perform against a stock compiler?
+
+\end{itemize}
 
 \section{Software Engineering}
-
-\stefan{Add intro}
 
 \subsection{Development Model}
 
@@ -397,18 +465,19 @@ which provides strict type checking. In addition, the project also used C++, for
 on mlir-fuzz, which was compiled using clang and ninja.
 %
 Throughout the project I've extensively used the MLIR and xDSL frameworks, while working on the
-xdsl-smt project (containing the majority of the project's code) and mlir-fuzz (containg the 
+xdsl-smt project (containing the majority of the project's code) and mlir-fuzz (containing the 
 code for program enumeration and exhaustive search).
 %
 Due to the open source nature of the project git and GitHub were used for source control.
 
 \subsection{Development Environment}
+\stefan{add this}
 This subsection will include the specs of my laptop and the PC I'm doing evaluation on.
 
 \subsection{Open Source Contributions}
 
 The project was be built on top of the open source project xdsl-smt \cite{xdsl-smt}.
-As such the contributions (were)/(will be) upstreamed. As a result there was additional attention 
+As such the contributions are planned to be upstreamed. As a result there was additional attention 
 given to code clarity and conciseness. This also means that a good understanding of the xdsl-smt
 project was required to not reimplement features and be able to leverage already existing code 
 effectively.
@@ -436,7 +505,7 @@ To ensure the correctness of our semantics we built a tool to generate Lean theo
 of equivalence between our selected source of truth and our implementation, which are then
 checked for correctness by the proof-assistant. This is covered in section \ref{lean theorems}.
 %
-We then present (in section \ref{enumeration}) the modificatioes made to the enumerator that were made to allow us
+We then present (in section \ref{enumeration}) the modifications made to the enumerator that were made to allow us
 to exhaustively search the RISC-V program space and handle the way attributes are used in the
 RISC-V dialect.
 %
@@ -876,86 +945,45 @@ as we had previously failed finding a lowering with any smaller program.
 
 
 \subsection{Refinements}
+\label{impl-refinements}
 
-\stefan{Present how a refinement is handled in preparation, using poison as an example, move the
-section below there}.
-
-\stefan{mention the previous step}
-The next step in the backend synthesis process involves confirming whether the target program is a 
-refinement of the source. After lowering the program to their semantics in the SMT dialect we construct
-an SMT expression that is true if and only if our refinement relation below holds for all possible inputs.
+After exhaustively enumerating the programs in the searh space, the next step in the backend synthesis
+process involves confirming whether the target program is a refinement of the source. 
+As presented in \ref{prep-refinements} after lowering the programs to their semantics in the SMT dialect 
+we construct an SMT expression that is true if and only if our refinement relation below holds for 
+all possible inputs.
 
 \begin{equation*}
 \text{\emph{target inputs refine the source inputs}} \implies \text{\emph{target outputs refine the source outputs}}
 \end{equation*}
 
-We do this by building an expression representative of the refinement relation above making use of the programs
-semantics and a chosen refineme scheme for the source and target values, and then wrapping it in universal quantifiers. 
-We also need to refer to any existensially quantified values that fill the holes in synthetic operations that
-are defined using \texttt{smt.declare\_const}. We do this by moving all such operations before the \texttt{smt.forall}
-block.
-%
-Thus our final SMT expression will look something like the following, where operation and type names are
-placeholders for the types and operation of the programs:
+First, we must define a refinement scheme from the values in the source program (which are possibly poisoned
+integer values) to RISC-V (64-bit) registers. We can easily imagine how this might work for 64 bit integers, as they
+can fully be stored in a register, however there is some room for interpretation when considering smaller
+bit width intergers as it is unclear what the upper bits of the register should be.
 
-\begin{minted}{mlir}
-// Declare any constants used in the semantics
-%0 = smt.forall {
-^bb0(%src_lhs : !smt.any_type, %src_rhs : !smt.any_type, 
-    %trg_lhs : !smt.any_type, %trg_rhs : !smt.any_type):
-
-  // Evaluate operations to obtain results
-  %src_result = "SRC_SEMANTICS"(%src_lhs, %src_rhs) 
-    : (!smt.any_type, !smt.any_type) -> !smt.any_type
-  %trg_result = "TRG_SEMANTICS"(%trg_lhs, %trg_rhs) 
-    : (!smt.any_type, !smt.any_type) -> !smt.any_type
-
-  // Evaluate if operands refine source operands
-  %lhs_precondition = "CHECK_REFINEMENT"(%trg_lhs, %src_lhs) 
-    : (!smt.any_type, !smt.any_type) -> !smt.bool
-  %rhs_precondition = "CHECK_REFINEMENT"(%trg_rhs, %src_rhs) 
-    : (!smt.any_type, !smt.any_type) -> !smt.bool
-  %valid_inputs = smt.and %lhs_precondition, %rhs_precondition
-
-  // Evaluate if result refine source result
-  %valid_output = "CHECK_REFINEMENT"(%trg_result, %src_result) 
-    : (!smt.any_type, !smt.any_type) -> !smt.bool
-
-  // The refinement relation
-  %is_refined = smt.implies %valid_inputs, %valid_output
-  smt.yield %is_refined : !smt.bool
-}
-\end{minted}
-
-We next define what \texttt{CHECK\_REFIMENT} is a placeholder for. In this work we analyze two different 
-refinement schemes for our instructions that have different benefits and drawbacks. In the following paragraphs
-we describe what the two identified refinements are, and their primary differences and use cases.
-
-\fehr{Maybe explain a bit more the problem here? That you have values of type `i16` for instance and
-you need to "map" them to register values. And explain here that unsigned/signed values are fine, it's just
-signless values. Explain the two choices at once, instead of separately}
-\stefan{Be more explicit on where the division between the two refinement types is, maybe with a short
-diagram, essentially add an introduction to the next two pragraph section}
+In this work we identify and analyze two different refinement schemes for our instructions that have 
+their own different benefits and drawbacks. One where the upper bits are constrained to a single
+possible value (the register becoming the sign extension of the integer), and one where they can
+take any value (thus the integer needs to be a truncation of the register). In the following paragraphs
+we describe what the refinements in more detail, together with their primary differences and use cases.
 
 \paragraph{Sign extension refinement}
 
 In this refinement scheme, we consider a register to refine a value, if the sign extension 
 of the value to 64 bits equals the value held within the registers (the bitvectors match).
-If the source value is unsigned, we use the zero extension instead. However this leave the
+If the source value is unsigned, we use the zero extension instead. However this leaves the
 values which don't have a specified signedness up to interpretation. In our case we use the
 sign extension, although this is an arbitrary choice, as both options yield similar drawbacks.
 This approach makes translating comparisons simpler, as we don't have to extend the values
 to 64 bits, but it is worse at handling overflows. A more detailed analysis of the effects 
-of these refinements on instruction lowerings is found in \emph{citation from eval chapter needed}.
+of these refinements on instruction lowerings is found in \emph{\ref{eval-refinements}}.
 
 Formally, when evaluating SMT queries we have the following sequence of SMT operations 
 (written here in the SMT dialect) to evaluate whether a register refines an integer type 
-value (using 32 bits as an example). In the semantics we use for the LLVM dialect, integer 
-values are pairs composed of their value and a bool, which is true if the value is poisoned.
-
-\stefan{Should I explain LLVM semantics in more detail somewhere in preparation?}
-\fehr{Yes, at least poison semantics, and probably signed/unsigned/signless integers (almost everyone
-uses signless ones at least.)}
+value (using 32 bits as an example). As discussed in \ref{prep-refinements}, in the LLVM dialect 
+semantics integer values are pairs composed of their value and a bool, which is true if the value 
+is poisoned.
 
 \begin{minted}{mlir}
 //Here %int repesents an integer of 32 bits and %reg the register values
@@ -1084,8 +1112,56 @@ as a PDL pattern.
 %result = pdl.result 0 of %operation
 \end{minted}
 
-When writing the transformation as a rewrite we refer to the operands of the source operation, this
-means that they will have had to been lowered by a different pattern for the final program to type check.
+When writing the transformation as a rewrite we need refer to the operands of the source operation,
+however this would cause the type checks to fail, as we cannot use integer types in RISC-V operations.
+To work around this we make use of the \newline \texttt{builtin.unrealized\_conversion\_cast}, which is an operation
+representing an arbitrary type conversion. We can then create a type checking pattern by converting 
+the operands to \texttt{!riscv.reg} and the result of the program back to an integer. 
+
+Notice how (in the example below), except those on arguments and results, the \newline
+\texttt{builtin.unrealized\_conversion\_cast}s cancel each other out, and thus can be safely removed
+when lowering entire programs. The remaining casts, will simply change the type of the function 
+that is lowered.
+
+\begin{minted}{mlir}
+func.func @add_three(%a: i32, %b: i32, %c: i32) -> i32 {
+  %tmp = "llvm.add"(%a, %b) : (i32, i32) -> i32
+  %sum = "llvm.add"(%sum1, %c) : (i32, i32) -> i32
+  func.return %sum : (i32) -> ()
+} 
+
+Becomes:
+
+func.func @add_three(%a: i32, %b: i32, %c: i32) -> i32 {
+  %a_reg = builtin.unrealized_conversion_cast %a : i32 to !riscv.reg 
+  %b_reg = builtin.unrealized_conversion_cast %b : i32 to !riscv.reg 
+  %tmp_reg = "riscv.add"(%a_reg, %b_reg) 
+    : (!riscv.reg, !riscv.reg) -> !riscv.reg
+  %tmp = builtin.unrealized_conversion_cast %tmp_reg : !riscv.reg to i32
+
+  %tmp_reg2 = builtin.unrealized_conversion_cast %tmp : i32 to !riscv.reg 
+  %c_reg = builtin.unrealized_conversion_cast %c : i32 to !riscv.reg 
+  %sum_reg = "riscv.add"(%tmp_reg2, %c_reg) 
+    : (!riscv.reg, !riscv.reg) -> !riscv.reg
+  %sum = builtin.unrealized_conversion_cast %sum_reg : !riscv.reg to i32
+  func.return %sum : (i32) -> ()
+} 
+
+Which then translates to:
+func.func @add_three(%a: !riscv.reg, %b: !riscv.reg, %c: !riscv.reg) 
+    -> !riscv.reg {
+  //%a, %b, %c casts propagate to argument types
+
+  %tmp = "riscv.add"(%a, %b) : (!riscv.reg, !riscv.reg) -> !riscv.reg
+  //%tmp casta cancel each other out
+  %sum = "riscv.add"(%tmp, %c) : (!riscv.reg, !riscv.reg) -> !riscv.reg
+
+  //%sum cast propagates to result type
+  func.return %sum : (!riscv.reg) -> ()
+} 
+\end{minted}
+
+\stefan{Introduce the following code snippet}
 
 \begin{minted}[escapeinside=||]{mlir}
 %type = pdl.type : i64
@@ -1097,12 +1173,23 @@ means that they will have had to been lowered by a different pattern for the fin
     {"predicate" = %pred} -> (%res_type : !pdl.type)
 %src_result = pdl.result 0 of %src_oper
 pdl.rewrite %src_oper {
-  %type_2 = pdl.type : !riscv.reg
-  %res_type_2 = pdl.type : !riscv.reg
-  %trg_oper = pdl.operation "riscv.slt" (%op1, %op2 : !pdl.value, !pdl.value) 
-      -> (%type : !pdl.type)
+  %reg_type = pdl.type : !riscv.reg
+
+  %cast_op1 = pdl.operation "builtin...cast"(%op1 : !pdl.value) 
+      -> (%reg_type : !pdl.type)
+  %op1_reg = pdl.result 0 of %cast_op1
+
+  %cast_op2 = pdl.operation "builtin...cast"(%op2 : !pdl.value) 
+      -> (%reg_type : !pdl.type)
+  %op2_reg = pdl.result 0 of %cast_op2
+
+  %trg_oper = pdl.operation "riscv.slt" (%op1_reg, %op2_reg 
+    : !pdl.value, !pdl.value) -> (%reg_type : !pdl.type)
   %trg_result = pdl.result 0 of %trg_oper
-  pdl.replace %src_result with %trg_result
+
+  %cast_res = pdl.operation "builtin...cast"(%trg_result : !pdl.value) 
+      -> (%res_type : !pdl.type)
+  pdl.replace %src_oper with %cast_res
 }
 \end{minted}
 
@@ -1132,84 +1219,84 @@ the overview of the xdsl-smt project is available in Table \ref{tab:xdsl_smt_ove
 \begin{table}[htbp]
 \centering
 \footnotesize
-\label{tab:mlir_fuzz_overview}
 \caption{mlir-fuzz Repository Overview}
-\begin{tabular}{lp{7cm}p{5cm}}
+\begin{tabular}{p{9cm}p{6cm}}
 \toprule
-\textbf{Directory} & \textbf{File \& Description} & \textbf{Contribution} \\
+\textbf{File \& Description} & \textbf{Contribution} \\
 
 \midrule
-\multirow{2}{*}{\texttt{dialects/}} 
-& \textbf{riscv.mlir} ---  IRDL implementation of the RISC-V dialect & Fully implemented \\
-& \textbf{llvm.mlir} --- IRDL implementation of LLVM dialect & --- \\
+\textbf{dialects/riscv.mlir} --- IRDL code for the RISC-V dialect & Fully implemented \\
+\textbf{dialects/llvm.mlir} --- IRDL code for the LLVM dialect & --- \\
+\textbf{dialects/arith.mlir} --- IRDL code for the arith dialect & --- \\
 \midrule
-\multirow{2}{*}{\texttt{lib/}} 
-& \textbf{CLITool.cpp} --- Configurations for various dialects & Added \texttt{riscv} configuration \\
-& \textbf{GeneratorInfo.cpp} --- Contains functions for generating IR programs and operations & Added function for generating synthetic operations \\
+\textbf{lib/CLITool.cpp} --- Configurations for various dialects & Added \texttt{riscv} configuration \\
+\textbf{lib/GeneratorInfo.cpp} --- Contains functions for generating IR programs and operations & Added function for generating synthetic operations \\
 \midrule
-\multirow{2}{*}{\texttt{tools/}} 
-& \textbf{mlir\_enumrate.cpp} --- Tool for enumerating arbitrary mlir programs & Added \texttt{riscv} configuration \\
-& \textbf{superoptimizer.cpp} --- Tool for enumerating mlir programs that have a type compatible with a source program & Allowed for generation of synth ops, added \texttt{riscv} configuration \\
+\textbf{tools/mlir\_enumrate.cpp} --- Tool for enumerating arbitrary mlir programs & Added \texttt{riscv} configuration \\
+\textbf{tools/superoptimizer.cpp} --- Tool for enumerating mlir programs that have a type compatible with a source program & Allowed for generation of synth ops, added \texttt{riscv} configuration \\
 
 \bottomrule
 \end{tabular}
+\label{tab:mlir_fuzz_overview}
 \end{table}
 
 \begin{table}[htbp]
 \centering
 \footnotesize
-\label{tab:xdsl_smt_overview}
 \caption{xdsl-smt Repository Overview}
-\begin{tabular}{lp{7cm}p{5cm}}
+\begin{tabular}{p{9cm}p{6cm}}
 \toprule
-\textbf{Directory} & \textbf{File \& Description} & \textbf{Contribution} \\
+\textbf{File \& Description} & \textbf{Contribution} \\
 
 \midrule
-\multirow{1}{*}{\texttt{dialects/}} 
-& \textbf{synth\_dialect.py} --- Implementation of the synth utility dialect & Added \texttt{synth.op} \\
+\textbf{dialects/synth\_dialect.py} --- Implementation of the synth utility dialect & Added \texttt{synth.op} \\
 
 \midrule
-\multirow{2}{*}{\texttt{semantics/}} 
-& \textbf{riscv\_semantics.py} --- Semantics for the RISC-V dialect & Fully implemented \\
-& \textbf{refinements.py} --- Value refinements and functions that implement the refinement relation in the smt dialect & Added integer to register refinement semantics \\
+\textbf{semantics/riscv\_semantics.py} --- Semantics for the RISC-V dialect & Fully implemented \\
+\textbf{semantics/refinements.py} --- Value refinements and functions that implement the refinement relation in the smt dialect & Added integer to register refinement semantics \\
+\textbf{semantics/semantics.py} --- Base classes for defining operation semantics & ---\\
 
 \midrule
-\multirow{3}{*}{\texttt{\scriptsize utils/proofs/}} 
-& \textbf{lean\_printer.py} --- Prints blocks using the SMT dialect as lean functions & Fully implemented \\
-& \textbf{print\_equivalence\_theorems.py} --- Prints equivalence theorems for all the RISC-V instructions which have implemented semantics & Fully implemented \\
-& \textbf{riscv\_instructions\_smt.py} --- Lowers RISC-V instructions to SMT dialect blocks & Fully implemented \\
+\textbf{utils/proofs/lean\_printer.py} --- Prints blocks using the SMT dialect as lean functions & Fully implemented \\
+\textbf{utils/proofs/print\_equivalence\_theorems.py} --- Prints equivalence theorems for all the RISC-V instructions which have implemented semantics & Fully implemented \\
+\textbf{utils/proofs/riscv\_instructions\_smt.py} --- Lowers RISC-V instructions to SMT dialect blocks & Fully implemented \\
 
 \midrule
-\multirow{1}{*}{\texttt{\scriptsize superoptimization/}} 
-& \textbf{synthesizer.py} --- Given an input and output program, lowers them and attempts to find 
+\textbf{superoptimization/synthesizer.py} --- Given an input and output program, lowers them and attempts to find 
 consants that achieve equivalence between them & Added semantics for synth operations, as well as 
 reconstruction of actual operations from synth ones\\
 
 \midrule
-\multirow{2}{*}{\texttt{cli/}} 
-& \textbf{superoptimize.py} \& \newline \textbf{synthesize\_lowering.py} --- Tools used previously to 
+\textbf{cli/superoptimize.py} \& \textbf{cli/synthesize\_lowering.py} --- Tools used previously to 
 search and find for lowerings from a dialect to another & Minor modifications to integrate changes made to other files \\
-& \textbf{parallel\_synthesize\_lowerings.py} --- Tool to search for a lowering from one dialect to another, doing so in parallel for
+\textbf{cli/parallel\_synthesize\_lowerings.py} --- Tool to search for a lowering from one dialect to another, doing so in parallel for
 each instruction & Fully implemented \\
 
 \midrule
-\multirow{2}{*}{\texttt{utils/}} 
-& \textbf{func\_to\_pdl.py} --- Utility to convert a function operation into its PDL components & --- \\
-& \textbf{convert\_lowering\_to\_pdl.py} --- Tool to convert a lowering into a series of PDL Patterns & Fully implemented \\
+\textbf{utils/func\_to\_pdl.py} --- Utility to convert a function operation into its PDL components & --- \\
+\textbf{utils/convert\_lowering\_to\_pdl.py} --- Tool to convert a lowering into a series of PDL Patterns & Fully implemented \\
 
 \bottomrule
 \end{tabular}
+\label{tab:xdsl_smt_overview}
 \end{table}
 
 
 \clearpage
 \chapter{Evaluation}
+
+This chapter covers our analysis done to provide answers to the questions posed in section \ref{evaluation-questions}.
+Thus in section \ref{eval-correctness} we analyze the method we used to prove the correctness of our
+semantics and ensure that our lowering matchies those semantics. Further in section \ref{eval-synthesis-duration}
+we provide measurements of synthesis duration of various instructions, and extrapolate the data to 
+measure how long it would take to increase the search depth. In section, \ref{eval-coverage} we present
+which instructions were and weren't synthesized, together with an analysis of what RISC-V extensions
+would be required to allow their synthesis. Section \ref{eval-refinements} covers the effects of the
+refienment schemes presented in \ref{impl-refinements}. And finally in section \ref{eval-performance}
+we provide a performance analysis against the Clang LLVM compiler's lowering from LLVM IR.
 \label{ch:eval}
 \section{Correctness}
-\fehr{What might be helpful here is a list of research questions. Not sure if this is expected or not for these kind of theses, but
-that's usually quite helpful in papers at least.}
-\stefan{I'm not writing bullet points here, as it's mostly going to be graphs, and results of
-analysis}
+\label{eval-correctness}
 
 \subsection{Semantics correctness}
 The semantics are proven equivalent to authoritative SAIL semantics in Lean.
@@ -1218,20 +1305,16 @@ The semantics are proven equivalent to authoritative SAIL semantics in Lean.
 The pdl transformations are proven equivalent using an smt solver.
 
 \section{Synthesis duration analysis}
-
-\subsection{Choosing Refinements}
-
-\subsection{Effects of TBD optimization}
+\label{eval-synthesis-duration}
 
 \section{Coverage of LLVM IR instructions}
+\label{eval-coverage}
 
-\subsection{Base RISC-V instruction set}
-
-\subsection{Bit Manipulation Extension}
-
-\subsection{Multiplication and Division Extension}
+\section{Refinements}
+\label{eval-refinements}
 
 \section{Performance against LLVM}
+\label{eval-performance}
 
 
 
