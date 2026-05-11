@@ -430,6 +430,7 @@ When evaluating the project we propose the following questions to investigate:
 \item Was correctness ensured, if so, how? Are there any limitations to this method? Can it be easily expanded 
 upon for other IRs?
 \item How long does it take to synthesize a backend? When does it become prohibitively expensive?
+\item What would be appropriate refinements to RISC-V registers? Any advantages or disadvantages of each?
 \item Which instructions were able to be synthesized, which weren't? How much coverage of the target
 subset does this method achieve? Is there a justifications for the instructions were a lowering wasn't found?
 \item How does the lowering perform against a stock compiler?
@@ -1298,22 +1299,30 @@ we provide a performance analysis against the Clang LLVM compiler's lowering fro
 \section{Correctness}
 \label{eval-correctness}
 
+\emph{Was correctness ensured, if so, how? Are there any limitations to this method? Can
+it be easily expanded upon for other IRs?}
+
 \subsection{Semantics correctness}
-The semantics are proven equivalent to authoritative SAIL semantics in Lean.
+
 
 \subsection{PDL Transformations}
 The pdl transformations are proven equivalent using an smt solver.
 
 \section{Synthesis duration analysis}
+\emph{How long does it take to synthesize a backend? When does it become prohibitively expensive?}
 \label{eval-synthesis-duration}
 
 \section{Coverage of LLVM IR instructions}
+\emph{Which instructions were able to be synthesized, which weren't? How much coverage of the target
+subset does this method achieve? Is there a justifications for the instructions were a lowering wasn't found?}
 \label{eval-coverage}
 
 \section{Refinements}
+\emph{What would be appropriate refinements to RISC-V registers? Any advantages or disadvantages of each?}
 \label{eval-refinements}
 
 \section{Performance against LLVM}
+\emph{How does the lowering perform against a stock compiler?}
 \label{eval-performance}
 
 
