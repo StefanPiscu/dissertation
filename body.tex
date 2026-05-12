@@ -4,11 +4,16 @@
 \section{Background}
 \label{background}
 
+\fehr{IR = Intermediate Representation}
+\fehr{Repetition of "different" twice in the first sentence, same with "high level"}
 IRs (Intermediary Representations) are used across different stages of compilation 
 in order to work at different levels of abstraction. This allows high level 
 optimizations to be applied on a high level view of the code, while letting low 
 level optimizations (like instruction selection) be handled close to the ISA. 
 
+\fehr{Probably try to use more commas for this paragraph (mostly the first two sentences),
+it makes it more comfortable to read. Also, probably rename "superoptimization" to "program synthesis" here.
+You may also want to rewrite this a bit, I feel your writing style improved since then.}
 There is a lot of work needed to optimize these IRs but if programs can be proven equivalent 
 (for example, by leveraging formal semantics) a technique arises called superoptimization. 
 By enumerating all programs of a small size we may find a shorter program that is equivalent 
@@ -18,11 +23,17 @@ an assembly language like RISC-V. Hence I'll refer to this as backend synthesis.
 
 \section{Motivation}
 
+\fehr{Probably rewrite this paragraph with your new style, this is too informal for a thesis
+(especially the introduction).}
 Why go through the effort of providing formal semantics for your IR when you could just
 go ahead and write the lowering yourself? Well, manually written backends are quite 
 buggy. Additionally, with proper tools and support compiler developers will have an easier time
 defining the semantics of their IRs.
 
+\fehr{Try to have the caption not being a description of the graph, but rather explain why the graph
+is relevant. For example, "The number of bugs in the LLVM repository keeps increasing, showing the
+need for semantic verification and synthesis of compiler components."}
+\fehr{Also, the figure is not referenced in the text.}
 \begin{figure}[H] 
     \centering
     \includegraphics[width=1\textwidth]{intro/BugsInLLVM.png}
@@ -32,19 +43,25 @@ defining the semantics of their IRs.
 \end{figure}
 \stefan{Don't know if this is the best graph to show backend bugs}
 
+\fehr{I wouldn't use "luckily" in a thesis, it sounds too informal.}
+\fehr{Probably tweak that sentence to mention that we can use these semantics to generate
+these backends for free, rather than relying on a human input?}
 Luckily, there exist verification tools that can prove the correctness of a lowering for 
 which semantics are available \cite{smt-mlir}. However these require the compiler 
 developer to both specify the semantics for their source and target representations, while 
 also providing the lowering themselves. This is increases the overall amount of work 
 required of the compiler developer.
 
-
+\fehr{This should apply outside of bitvector semantics as well.}
+\fehr{This paragraph talks about maybe too many things, try to focus on the main idea more (that
+you can write semantics and get the implementation for free).}
 The aim of this project is to give motivation for compiler developers to provide formal
 bitvector semantics for their IRs by synthesizing a large portion of the backend. The
 synthesized lowering will also verified so no additional work will be required for correctness.
 Moreover, the synthesized lowering will use the minimal number of assembly instruction for
 each IR instruction to achieve high performance.
 
+\fehr{Remove "Thus" as an introductory word. Maybe talk about MLIR here?}
 Thus this project introduces a prototype of backend synthesis to a subset RISC-V, 
 evaluating its effectiveness, as well as some optimization techniques that can be 
 applied to speed up the process, achieving more coverage of the source representation,
@@ -53,12 +70,17 @@ and a more performant backend, all while being proven correct.
 
 \section{Approach}
 
+\fehr{You should mention that you are doing this on xDSL which can easily translate to
+MLIR.}
+\fehr{This is the first time you mention "dialect", this should be introduced before.}
 For easier development, prototyping and experimenting I will be using the 
 xDSL\textsuperscript{\cite{xdsl-smt}} framework which contains an implementation
 of a RISC-V dialect, as well as making use of the infrastructure in the open source project 
 xdsl-smt, an implementation of SMTLib for xDSL, and mlir-fuzz, which is used for 
 enumerating mlir programs. 
 
+\fehr{Repetition of "project".}
+\fehr{If you claim a "series of additions", you should mention them explicitely.}
 The project consist of a series of additions to these projects which 
 lower the RISC-V dialect to the smt dialect and formally prove equivalence to some 
 authoritative RISC-V semantics, enhance mlir-fuzz to generate RISC-V programs, then run
@@ -69,6 +91,11 @@ Following this the aim is to evaluate the effectiveness of this technique, as we
 as their feasability for large scale applications.
 
 \section{Previous Work}
+
+\fehr{Probably just cite "First-Class Verification Dialects for MLIR" here for xdsl-smt, I wouldn't
+mention anyone specifically, this is joint work with 4-5 other people. `mlir-fuzz` is also
+used in this paper.}
+\fehr{"It uses" looks like it refers to `xdsl-smt', but it should refer to your project}
 This project is based of work done by my supervisor Mathieu Fehr on xdsl-smt, and mlir-fuzz. It uses open source 
 lean semantics\textsuperscript{\cite{riscv-lean}} proven equivalent to the authoritative SAIL 
 semantics\textsuperscript{\cite{sail-paper}}. 
@@ -81,6 +108,9 @@ Souper \cite{souper}.
 \label{ch:prep}
 \section{MLIR}
 
+\fehr{Technically it is used for heterogeneous computing, but it is also used in many other
+contexts, such as fully homomorphic encryption or general purpose compilation (clang). It is just
+mainly used to build industry compilers.}
 MLIR (Multi-Level Intermediate Representation) is an extensible compiler framework that allows
 users to define IRs named dialects. Developed as a sub-project of LLVM it aims to facilitate the 
 construction of domain specific compilers and improve compilation for heterogeneous computing.
@@ -88,6 +118,7 @@ One feature worth highlighting is the interoperability of dialects, allowing any
 used within any MLIR program.
 
 
+\fehr{single static assignment -> static single-assignment. Also introduce the acronym SSA.}
 The main computation unit in MLIR programs are operations, which have a set of operands (variables),
 attributes (static data), and results. Programs are a series of operations which can come from 
 multiple dialects, they also have types, which are verified to ensure the program is well formed. 
@@ -116,6 +147,8 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 
 \subsection*{LLVM IR}
 
+\fehr{Technologies is quite vague. Maybe "LLVM is a set of middle-level and low-level compiler components"?}
+\fehr{"This is why," is too informal. also you should remove the comma there.}
 LLVM is a set of compiler and technologies that leverages a language-independent 
 intermediate representation (LLVM IR). The IR serves as a portable high level assembly language
 that is a common target for optimizations. Many modern programming languages (C++, Haskell, Rust,
@@ -144,6 +177,9 @@ names, for example from \texttt{arith.cmpi} to \texttt{llvm.icmp}.
 
 \subsection*{RISC-V}
 
+\fehr{Also, RISC-V is open source, this is important to mention.}
+\fehr{You should cite "A multi-level compiler backend for accelerated micro-kernels targeting risc-v isa extensions",
+which introduced the dialect}
 RISC-V is a simple open source instruction set architecture, with a variety of extensions.
 I've chosen it as my target for the project due to it's simplicity and extensibility. 
 xDSL has an implementation of a dialect for the RISC-V ISA, which will be used in this project.
@@ -152,6 +188,8 @@ Below is the lowering of the LLVM dialect presented before in this dialect. It's
 are equivalent to a RISC-V assembly instructions, but the code is in SSA form.
 We can also refer to specific registers as part of the type attribute, although this
 is unnecesary and better handled by a register allocator.
+
+\fehr{Maybe should the related RISC-V program (withouth the function definition) as well?}
 
 \begin{minted}{mlir}
 func.func @main(%arg0 : !riscv.reg, %arg1 : !riscv.reg) -> !riscv.reg {
@@ -165,7 +203,7 @@ func.func @main(%arg0 : !riscv.reg, %arg1 : !riscv.reg) -> !riscv.reg {
 
 IRDL (IR Definition Language) \cite{irdl} is a dialect that is used to define dialects.
 This is useful to define the structure of our source and target dialect to a fuzzer,
-a tool that will generate programs using the defined operations. A irdl definition looks
+a tool that will generate programs using the defined operations. An irdl definition looks
 like the following, where operands, and results are given type constrains for the operation
 to satisfy in order to be verified. In the example below we have to operands that must be
 of type \texttt{i64}, and a result of the same type, we also have the operation name \texttt{and}.
@@ -214,6 +252,8 @@ pdl.pattern : benefit(1) {
 
 \section{Semantics}
 
+\fehr{"sits the idea" sounds a bit weird. Explain that mechanized semantics are important to
+understand the behavior of the instructions, and how to reason about them.}
 At the base of the entire project sits the idea of formal semantics for our dialects.
 We need to express how our instructions act on their inputs, and we want the semantics
 to be easy to work with using automatic solvers. Therefore we use SMT formulas and model
@@ -230,6 +270,7 @@ we can use xDSL infrastructure to aid with parsing, printing and introspection.
 Below is an example of the semantics of the \texttt{riscv.sltw} instruction. The more complex
 behaviour of the instruction (which isn't really relevant for this example) gets broken down 
 into simpler primitives which a SMT solver can work with.
+\fehr{Maybe show the same program using SMT-LIB?}
 \begin{minted}{mlir}
 %0 = "smt.bv.extract"(%arg0) {start = #builtin.int<0>, end = #builtin.int<31>} 
     : (!smt.bv<64>) -> !smt.bv<32>
@@ -246,7 +287,7 @@ into simpler primitives which a SMT solver can work with.
 
 Dialects don't always work on the same types of values (RISC-V dialect uses registers, and LLVM IR 
 uses integers), checking if a lowering is ``correct'' isn't as easy as saying that for all inputs
-the programs yield the same outputs. In fact we need to introduce the following \emph{refinement}
+the programs yield the same outputs. In fact, we need to introduce the following \emph{refinement}
 relation. A program is a \emph{refinement} of another if the following proposition holds:
 \begin{equation*}
 \text{\emph{target inputs refine the source inputs}} \implies \text{\emph{target outputs refine the source outputs}}
@@ -291,6 +332,8 @@ placeholders for the types and operation of the programs:
 }
 \end{minted}
 
+\fehr{There are operations (like "arith.select") that do not propagate poison, even though most
+operations do.}
 This way we can meaningfully talk about lowerings. Notice that what it means for a value to 
 \emph{refine} another is up to the refinement scheme chosen, however a clear example arises when 
 considering poison in LLVM. Poison is a form of undefined behavior that propagates, i.e. if any of 
@@ -309,6 +352,7 @@ llvm.func @f(%x: i32) -> i1 {
 }
 \end{minted}
 
+\fehr{"Asserting that the poisoned value is true" -> "Asserting that the poisoned value can be compiled to true"}
 Because of poison, this code can be optimized to, as we can ignore the undefined behaviour that
 arises when $x = \texttt{INT\_MAX}$ by simply asserting that the poisoned value is \texttt{true}:
 \begin{minted}{mlir}
@@ -347,6 +391,7 @@ aren't the focus of the project.
 
 \section{Superoptimization and Lowering Synthesis}
 
+\fehr{You talk about superoptimization but the section is about lowering synthesis.}
 As mentioned in \ref{background}, superoptimization is a technique where a compiler 
 attempts to find the optimal sequence of instructions that has the same semantics as a source
 sequence. One technique used to do this is via exhausting search over the program space and boolean 
@@ -376,6 +421,7 @@ This tool, written in C++, uses the IRDL specification of a dialect in order to
 enumerate all the programs with certain characterstics (number of free variables,
 number of instructions, etc.).
 %
+\fehr{This part is not related to the preparation right? Maybe it should be in the implementation chapter?}
 I extend the tool with the RISC-V dialect, including adding the ability to handle
 constants that are passed in as attributes (to allow the generaliztion of immediates).
 Thus the tool enumerates risc-v programs with empty slots for the immediates that
@@ -402,7 +448,7 @@ correctness of our semantics which we use as part of our lowering synthesis proc
 
 \section{Requirements Analysis}
 
-We established the following series of requirments for the project, in order to build a succesful
+We established the following series of requirements for the project, in order to build a succesful
 implementation plan:
 
 \begin{itemize}
@@ -461,6 +507,8 @@ The project went through the following major iteration cycles:
 
 \subsection{Languages and Tools}
 
+\fehr{Mention "pyright", which is the type checker used by pylance. This is the main reason why
+Python is usable imo.}
 The project was written primarily in Python, within the VSCode editor with the pylance extension,
 which provides strict type checking. In addition, the project also used C++, for the work performed
 on mlir-fuzz, which was compiled using clang and ninja.
@@ -470,6 +518,7 @@ xdsl-smt project (containing the majority of the project's code) and mlir-fuzz (
 code for program enumeration and exhaustive search).
 %
 Due to the open source nature of the project git and GitHub were used for source control.
+Due to the open source nature of the project, git and GitHub were used for source control.
 
 \subsection{Development Environment}
 \stefan{add this}
@@ -477,6 +526,10 @@ This subsection will include the specs of my laptop and the PC I'm doing evaluat
 
 \subsection{Open Source Contributions}
 
+\fehr{Remember to fix "(where)/(will be)"}
+\fehr{Another aspect is that you want to split your changes in small patches, so that they
+are easily reviewable. This is something that is quite hard to do in general and require some 
+skill.}
 The project was be built on top of the open source project xdsl-smt \cite{xdsl-smt}.
 As such the contributions are planned to be upstreamed. As a result there was additional attention 
 given to code clarity and conciseness. This also means that a good understanding of the xdsl-smt
