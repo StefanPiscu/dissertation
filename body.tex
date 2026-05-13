@@ -478,7 +478,7 @@ upon for other IRs?
 \item How long does it take to synthesize a backend? When does it become prohibitively expensive?
 \item What would be appropriate refinements to RISC-V registers? Any advantages or disadvantages of each?
 \item Which instructions were able to be synthesized, which weren't? How much coverage of the target
-subset does this method achieve? Is there a justifications for the instructions were a lowering wasn't found?
+subset does this method achieve? Is there a justifications for the instructions where a lowering wasn't found?
 \item How does the lowering perform against a stock compiler?
 
 \end{itemize}
@@ -1442,9 +1442,92 @@ to programs of any size by induction.
 \emph{How long does it take to synthesize a backend? When does it become prohibitively expensive?}
 \label{eval-synthesis-duration}
 
-\section{Coverage of LLVM IR instructions}
+\subsection{Enumeration}
+
+In our implementation of the backend synthesis pipeline, for every instruction we need 
+to enumerate the program space. Since we use temporary files or pipes to communicate 
+between different processes, we consider the writing to these files to be part of the
+enumeration time. We measure enumeration time by simulating this process.
+In table \ref{tab:enumeration_stats} we present the amount programs we enumerate and subsequently
+write out to an output file, as well as the duration that this process took (which was measured
+using the unix \texttt{time} utility 3 times and taking the average). Further precision is unnecesary,
+as it becomes clear that only a fraction of the total time is spend enumerating.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Enumeration counts and duration per instruction depth.}
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Instructions} & \textbf{Programs Enumerated} & \textbf{Average Duration} \\
+        \midrule
+        1 & 84 & 0.18s \\
+        2 & 7,278 & 3.20s \\
+        3 & 951,786 & 12m 26s \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:enumeration_stats}
+\end{table}
+
+\subsection{Synthesis}
+As mentioned in preparation, testing was done using the arith dialect, as there is an direct
+correspondence between its relevant instructions and those of the llvm ir. Therefore, for 
+arithmetic operations from within this dialect there was an attempt of synthesing a lowering
+using up to two arithmetic instructions from the RISC-V instruction set. This was repeated for  
+a few relevant argument types (i1, i8, i32, i64). 
+
+In figure \ref{fig:synthesis_per_instruction} we display a graph displaying the duration of completing synthesis for any 
+particular (operation, type, program size) triplet.
+%
+Figure \ref{fig:duration_distribution} displays a histogram for the distribution of duration across synthesized instructions
+we notice, successes are much faster tha failures, this is because a program can be found mid-way
+through searching. 
+%
+This inspired figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
+for each different operation. We excluded any operations where less than 15 programs were required to find a match,
+as it would not be representative of the overall average, as we always check the programs in the same order. For the
+sake of space we also only included 64-bit instructions, as 32, and 8 bit versions have similar durations.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{synthesis_time_per_successful_instruction} 
+    \caption{Synthesis time for each instruction}
+    \label{fig:synthesis_per_instruction}
+\end{figure}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{duration_distribution} 
+    \caption{Distribution of synthesis duration across successes and failures}
+    \label{fig:duration_distribution}
+\end{figure}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{synthesis_time_per_program} 
+    \caption{Mean synthesis time per attempted program for each instruction}
+    \label{fig:synthesis_per_instruction_mean}
+\end{figure}
+
+Extrapolating the data from figure \ref{fig:synthesis_per_instruction_mean}, 
+together with the instructions count from table \ref{}, we can estimate how 
+long it would take to attempt synthesis using program of up to three instructions.
+Excluding \texttt{ceildivsi}, \texttt{floordivsi} and \texttt{ceildivui} which are more
+complex instruction that don't have an llvm counterpart, on average a lowering is checked
+in 100ms to 400ms, depnding on the instruction being lower. 
+
+Given that there are up to $951786$ programs with up to three instruction we estimate it 
+would take between 26.5 to 106 hours to finish the synthesis of each instruction. 
+This can be heavily parallelized, so it is  quite achievable over a few days with access 
+to a high performance compute cluster or even a very powerful computer. We thus conclude 
+that synthesising all 3 instructions lowerings is possible, although outside the scope 
+of a prototype like the current project. It is also clear 4 instructions becomes prohibitively 
+expensive.
+
+\section{Coverage of operation set}
 \emph{Which instructions were able to be synthesized, which weren't? How much coverage of the target
-subset does this method achieve? Is there a justifications for the instructions were a lowering wasn't found?}
+subset does this method achieve? Is there a justifications for the instructions where a lowering wasn't found?}
 \label{eval-coverage}
 
 \section{Refinements}
