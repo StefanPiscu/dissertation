@@ -1357,9 +1357,86 @@ it be easily expanded upon for other IRs?}
 
 \subsection{Semantics correctness}
 
+As presented before, the semantics are validated using automatically generated Lean proofs.
+Therefore for all the arithmetic instructions considered in the base RISC-V instruction set
+a lean function was generated from it's lowering to the SMT dialect, which was then proven
+equivalent using automated tactics. In particular, we use was made of the unfold and 
+bv\_decide tactic, to create theorems like the ones below:
+
+\begin{minted}{lean}
+def _slt (a0 : BitVec 64) (a1 : BitVec 64) : BitVec 64 :=
+  let a2 : Bool := (BitVec.slt a1 a0) ;
+  let a3 : BitVec 64 := 0 ;
+  let a4 : BitVec 64 := 1 ;
+  let a5 : BitVec 64 := (cond a2 a4 a3) ;
+  a5
+theorem slt_eq (a0 : BitVec 64) (a1 : BitVec 64) : RV64.slt a0 a1 = _slt a0 a1 := by
+  unfold RV64.slt _slt
+  bv_decide
+
+def _andi (a0 : BitVec 12) (a1 : BitVec 64) : BitVec 64 :=
+  let a2 : BitVec 64 := (BitVec.signExtend 64 a0) ;
+  let a3 : BitVec 64 := (BitVec.and a1 a2) ;
+  a3
+theorem andi_eq (a0 : BitVec 12) (a1 : BitVec 64) : RV64.andi a0 a1 = _andi a0 a1 := by
+  unfold RV64.andi _andi
+  bv_decide
+\end{minted}
+The RV64 semantics are taken from the following repository \cite{riscv-lean}.
+
+The correctness proof tool was developed early in the development process. While the author
+claims that it has cought a variety of bugs that would have snuck through the manual 
+implementation of the semantics. While this claim is difficult to prove, we still mention
+it as it was rather surprising to the author.
+
+This approach has two major limitations that, luckily, don't arise within the scope of the 
+project. First, there is a requirment for authoritative semantics to be available and written
+in Lean. Secondly, no proofs can be made for instructions that have additional effects (reading
+and writing from memory), at least not without greatly expanding the complexity of the tools
+created.
+
+Other than the limitations mationed above, this method can be easily extended to include
+other dialects. However, as part of the implementation a wrapper needs to be created 
+to invoke the semantics class of the operation. For RISC-V (and ISAs in general) this is
+quite easy as instructions tend to take one of a few different shapes (as a design principle)
+so this similarity can be exploited to generate generic wrappers. In particular for the RISC-V
+theorems we have a wrapper for operations that take two registers, and those that take an 
+attribute and an operand.
+
 
 \subsection{PDL Transformations}
-The pdl transformations are proven equivalent using an smt solver.
+
+After having proof of correctness for the semantics of individual instructions we can be confident
+that given a particular program, its lowering into the SMT dialect is a correct representation
+of its semantics. Therefore, given we construct our SMT expressions to only be satisfiable if
+the target program is a refinement of the source, we can be sure that whatever refinement scheme
+we define will hold for the lowering, if the SMT solver succesfully finds a model.
+
+This leaves only one point of failure for the correctness of our instruction lowerings, 
+the SMT solver itself. In our tools we rely on the Z3 solver, which is a mature 
+open-source project. As a result we assume that any output of the solver is correct. However,
+we have yet to prove that lowering more than one instruction with our method doesn't introduce
+any errors. This can be easily seen as true by considering the refinement relation, and how
+2 pairs programs that refine each other compose to create another such pair, i.e it is 
+transitive.
+
+% Snuck a commutative diagram in my dissertation :)
+\begin{figure}[H]
+    \centering
+    \begin{tikzcd}
+        S_1 \arrow[r, "Source_1"] & S_2 \arrow[r, "Source_2"] & S_3 \\
+        T_1 \arrow[u, "\mathcal{R}"] \arrow[r, "Target_1"'] & T_2 
+        \arrow[u, "\mathcal{R}"] \arrow[r, "Target_2"'] & T_3 \arrow[u, "\mathcal{R}"]
+    \end{tikzcd}
+    \caption{Transitivity diagram of the refinement relation $\mathcal{R}$}
+    \label{fig:refinement_composition}
+\end{figure}
+
+Formally, considering the diagram above, as the refinement relation ($\mathcal{R}$) 
+holds for each individual translation step, the outputs of the first valid target operation 
+serve as valid refined inputs for the second, guaranteeing that the composed 
+target sequence correctly refines the composed source sequence. This can then be extended
+to programs of any size by induction.
 
 \section{Synthesis duration analysis}
 \emph{How long does it take to synthesize a backend? When does it become prohibitively expensive?}
