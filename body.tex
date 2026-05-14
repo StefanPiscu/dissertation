@@ -1642,32 +1642,81 @@ clang compiler.
 \chapter{Conclusion}
 \label{ch:conc}
 
+
 \section{Work Completed}
 
-\subsection{Synthesized large chunk of LLVM to RISC-V Backend}
+The project consisted of developing a prototype for a backend synthesis tool, by leveraging
+existing work and other open source project, and exploring the feasibility of automated lowering
+generation as an option in the compiler designers toolset. Overall, the project has achieved 
+it's goal, consisting of a working pipeline that can succesfully generating lowerings from
+source operations with well defined semantics to the arithmetic subset of the base RISC-V 
+instruction set.
 
-\subsection{Novel Contribution}
-Exploration of backend synthesis as a viable alternative to manually written lowerings.
+\subsection{Development of tool to check RISC-V semantics in Lean}
 
-Analysis of different refinements, and their effect
+We build a tool to translate SMT semantics that were manually written for the RISC-V
+ISA into lean theorems that serve as proofs of equivalence between our semantics and
+authoritative semantics we asserted as a source of truth.
+
+\subsection{Synthesized part of an LLVM to RISC-V backend}
+
+Using tools implemented, along with existing open source ones, we obtained lowerings from 
+a large subset of the Arith dialect (and consequently, the LLVM IR) to the base RISC-V ISA. 
+We leveraged mature SMT solvers and formal methods to ensure the lowerings were correct.
+
+\subsection{Novel Contributions}
+
+\paragraph{Evaluated feasability of generating lowerings}
+
+Backend synthesis the novel idea behind the project, as a result we evaluated it's feasability
+and limitations in the context of genarating a lowering from a mature IR like LLVM (or Arith)
+to a simple ISA like RISC-V
+
+\paragraph{Explored refinement options}
+During development the idea of refining integers of various bitwidths into architectural
+registers was explored and two feasable lowering schemes were identified. Analysis was
+performed to determine their advantages and disadvantages.
+
 
 \section{Future Work}
-Creation of a proper tool written in
-a performance oriented language like C++.
 
-Evaluating the performance of techniques to prune the search space via dataflow analysis.
+\paragraph{Creation of proper tool} 
+Using a language like C++ and specialising the code towards backend synthesis could lead
+to a significant speed up, as well as an increase in the usability of the tool.
 
-Using LLMs to attempt to search for lowerings of up to one size large than we searched for
-for the input instructions we failed to find.
+\paragraph{Using heuristics while searching}
+Evaluation results (and common sense) showed that synthesis time greatly decreases when we
+luckily stumble upon the right answer in the search. A future work could evaluate the impact
+of various heurisitcs in our search process, which could yield a large speed up.
+
+\paragraph{Using LLMs to search deeper}
+LLMs have showen promising results when asked to generate IR programs. However these have
+no guarantee of correctness of optimality. However using the tools from this project, and
+xdsl-smt, correctness of the lowering can be proven. As for optimality, by exhaustively 
+searching up to a depth of $d$ and not finding a working transformation, we can easily 
+prove one of depth $d+1$ found by an LLM is optimal. As a result it could be possible 
+to leverage large scale AI models to investigates programs up to one deeper than normal
+without sacrificing correctness or optimality.
 
 \section{Reflections}
-Working on an open source project, and how it's different from a personal project.
 
-Learning about important frameworks to compiler development like MLIR and LLVM.
+When choosing and starting the project, I didn't have much experience in Python, 
+MLIR, formal verification, or working on an open source project. This was
+vastly different than working on a small scale personal project with minimal tools.
+I had to familiarize myself with a variety of technologies, while also writing code
+on top of a large codebase. I'd estimate that for every line of code I've written an
+I've read and comprehended an average of 15 lines, while also reading plenty of 
+documentation and leveraging my supervisors expertise in the project for help.
 
-Learning about formal verification, and using it in a real project.
+Moreover, working on an open research project was also an invaluable experience. The
+prototype nature of the code meant that a large amount of thought was allocated into
+making the code both extensible and also compatible with the code around it, so that 
+it could later be expanded upon. The research nature of the project also lead to 
+the discovery and usage of new techniques throught development that weren't foreseen
+at the time of writing the proposal, but ended up fitting better with the theme of
+the project, such as using Lean for proofs of correctness, and using the Arith dialect
+for evaluation purposes.
 
-Working on an open research project great, learning how research in academia is like.
 
 
 
