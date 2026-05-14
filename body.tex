@@ -1481,11 +1481,17 @@ particular (operation, type, program size) triplet.
 Figure \ref{fig:duration_distribution} displays a histogram for the distribution of duration across synthesized instructions
 we notice, successes are much faster tha failures, this is because a program can be found mid-way
 through searching. 
-%
-This inspired figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
+
+Considering that total synthesis time can vary depending on when the answer is found, a relevant
+graph is figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
 for each different operation. We excluded any operations where less than 15 programs were required to find a match,
 as it would not be representative of the overall average, as we always check the programs in the same order. For the
 sake of space we also only included 64-bit instructions, as 32, and 8 bit versions have similar durations.
+When looking at the data we notice the trend that more complicated operations (like divisions, remainders,
+and multiplications) take longer then simpler operations like shifts and basic comparisons. Programs of 
+size 1 also have a longer synthesis time due to not being able to properly amortize the overhead
+of running the entire pipeline because there are only small number of attempted programs.
+
 
 \begin{figure}[htbp]
     \centering
@@ -1511,7 +1517,7 @@ sake of space we also only included 64-bit instructions, as 32, and 8 bit versio
 \end{figure}
 
 Extrapolating the data from figure \ref{fig:synthesis_per_instruction_mean}, 
-together with the instructions count from table \ref{}, we can estimate how 
+together with the instructions count from table \ref{tab:enumeration_stats}, we can estimate how 
 long it would take to attempt synthesis using program of up to three instructions.
 Excluding \texttt{ceildivsi}, \texttt{floordivsi} and \texttt{ceildivui} which are more
 complex instruction that don't have an llvm counterpart, on average a lowering is checked
@@ -1525,20 +1531,111 @@ that synthesising all 3 instructions lowerings is possible, although outside the
 of a prototype like the current project. It is also clear 4 instructions becomes prohibitively 
 expensive.
 
-\section{Coverage of operation set}
+\section{Coverage}
 \emph{Which instructions were able to be synthesized, which weren't? How much coverage of the target
 subset does this method achieve? Is there a justifications for the instructions where a lowering wasn't found?}
 \label{eval-coverage}
+\newline
+The project limits the target set to the RISC-V base instructions, therefore it is rather
+limited in its ability to express more complex instruction like multiplications and 
+divisions, but even so it has had success in synthesize a backend for the simpler  
+instructions like arithmetic, bitwise operations, and shifts. A detailed summary
+of the found lowering can be found in table \ref{tab:lowering_coverage}
+%
+Attached to the table there are some additional details about how the refinement scheme
+affects the final lowering, but this will be further explored in section \ref{eval-refinements}
+\begin{table}[htpb]
+    \centering
+    \small
+    \caption{Summary of Lowering Synthesis Coverage (excluding trivial \texttt{i1})}
+    \begin{tabular}{@{}lp{10cm}@{}}
+        \toprule
+        \textbf{Synthesis Status} & \textbf{Instructions} \\
+        \midrule
+        
+        \textbf{Fully Synthesized} & 
+        \texttt{arith.addi}$^{\downarrow}$, \texttt{arith.subi}$^{\downarrow}$, \texttt{arith.andi}, \texttt{arith.ori}, \\
+        & \texttt{arith.xori}, \texttt{arith.trunci}$^{\downarrow}$, \texttt{arith.extsi}, \\
+        & \texttt{arith.shli}$^{\downarrow}$, \texttt{arith.shrui}$^{\downarrow}$ \\
+        \midrule
+        
+        \textbf{Partially Synthesized} & \\
+        \textit{(Missing \texttt{i8})} & \texttt{arith.cmpi eq}, \texttt{arith.shrsi}$^{\uparrow}$ \\
+        \addlinespace
+        \textit{(Missing \texttt{i32})} & \texttt{arith.extui} \\
+        \addlinespace
+        \textit{(Missing \texttt{i8}, \texttt{i32})} & \texttt{arith.cmpi slt}$^{\uparrow}$, \texttt{arith.cmpi sle}$^{\uparrow}$, \texttt{arith.cmpi sgt}$^{\uparrow}$, \\
+        & \texttt{arith.cmpi sge}$^{\uparrow}$, \texttt{arith.cmpi ult}$^{\uparrow}$, \texttt{arith.cmpi ule}$^{\uparrow}$, \\
+        & \texttt{arith.cmpi ugt}$^{\uparrow}$, \texttt{arith.cmpi uge}$^{\uparrow}$ \\
+        \midrule
+        
+        \textbf{Failed (Unsupported)} & 
+        \texttt{arith.cmpi ne}, \texttt{arith.select}, \texttt{arith.muli}, \texttt{arith.divsi}, \\
+        & \texttt{arith.divui}, \texttt{arith.remsi}, \texttt{arith.remui}, \texttt{arith.minsi}, \\
+        & \texttt{arith.minui}, \texttt{arith.maxsi}, \texttt{arith.maxui}, \texttt{arith.ceildivsi}, \\
+        & \texttt{arith.ceildivui}, \texttt{arith.floordivsi} \\
+        \bottomrule
+    \end{tabular}
+    
+    \vspace{0.2cm}
+    \raggedright
+    \begin{itemize}
+        \item[$^{\uparrow}$] \emph{Coverage Improves with Sign Extension:} sign extension refinement successfully finds lowerings for bitwidths that fail here (e.g., all marked \texttt{cmpi} predicates become fully synthesized, and \texttt{shrsi} successfully synthesizes for \texttt{i8}). 
+        \item[$^{\downarrow}$] \emph{Coverage Worsens with Sign Extension:} sign extension refinement fails to find lowerings for bitwidths that succeed here (e.g., \texttt{addi}, \texttt{subi}, \texttt{trunci}, \texttt{shli}, and \texttt{shrui} fail on \texttt{i8}, dropping them into the partially synthesized category).
+    \end{itemize}
+    \label{tab:lowering_coverage}
+\end{table}
 
 \section{Refinements}
 \emph{What would be appropriate refinements to RISC-V registers? Any advantages or disadvantages of each?}
 \label{eval-refinements}
 
+\paragraph{Truncation refinement coverage advantage}
+
+The lowering obtained using truncation scheme gives additional leniancy to instructions
+that can overflow into the upper `garbage' bits of the register. In particular this reduces
+the required program size for basic arithmetic (\texttt{addi}, \texttt{subi}), as well as 
+the logical shift operations like \texttt{shli} and \texttt{shrui}.
+
+\paragraph{Sign extension refinement coverage advantage} Truncation however, struggles greatly
+with comparisons on sub-registers, as comparing two 64-bit registers with `garbage' upper
+bits yields wrong results. Under the sign extension refinement scheme we are able to 
+fully synthesize such comparisons.
+
+\paragraph{Synthesis duration}
+When evaluating whether a program is a valid lowering for another the SMT solver can spend
+significantly more time when using the sign extension scheme. That is because the queries
+generated with this refinement are harder to solve, as Z3 must prove that the equality 
+holds for all the bits, including those that were sign extended for which it has little
+to no information according to the semantics, meanwhile the truncation queries are much 
+faster as large chunks of the work can be discarded as it related to the upper bits,
+which are treated as anything. Table \ref{tab:synthesis_duration_comparison} contains
+some examples where there is a significant slowdown.
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{Comparison of Synthesis Duration Across Refinement Schemes}
+    \begin{tabular}{@{}lcrrrr@{}}
+        \toprule
+        & & & \multicolumn{2}{c}{\textbf{Synthesis Duration (s)}} & \\
+        \cmidrule{4-5}
+        \textbf{Instruction} & \textbf{Type} & \textbf{Programs Attempted} & \textbf{Truncation} & \textbf{Sign Ext.} & \textbf{Slowdown} \\
+        \midrule
+        \texttt{arith.cmpi ne} & \texttt{i8} & 84 (Size 1 Exhaustion) & 14.7 & 186.5 & \textbf{12.7x} \\
+        \texttt{arith.minsi} & \texttt{i8} & 84 (Size 1 Exhaustion) & 17.3 & 57.8 & \textbf{3.3x} \\
+        \texttt{arith.maxui} & \texttt{i8} & 84 (Size 1 Exhaustion) & 18.0 & 52.3 & \textbf{2.9x} \\
+        \addlinespace
+        \bottomrule
+    \end{tabular}
+    \label{tab:synthesis_duration_comparison}
+\end{table}
+
 \section{Performance against LLVM}
 \emph{How does the lowering perform against a stock compiler?}
 \label{eval-performance}
 
-
+This section will be a summary of the methodology used to compare against the stock 
+clang compiler.
 
 
 \clearpage
@@ -1548,8 +1645,6 @@ subset does this method achieve? Is there a justifications for the instructions 
 \section{Work Completed}
 
 \subsection{Synthesized large chunk of LLVM to RISC-V Backend}
-
-\subsection{Examined optimizations techniques for backend synthesis}
 
 \subsection{Novel Contribution}
 Exploration of backend synthesis as a viable alternative to manually written lowerings.
