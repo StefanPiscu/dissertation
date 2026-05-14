@@ -17,13 +17,18 @@ grep "\^author " | sort | uniq -c | sort -nr}} \\
 \textbf{Marking Supervisor:} Tobias Grosser \\
 
 \section*{Original Claims}
-Claims
+The core objective of the project was to build a novel prototype of a 
+backend synthesis tool and generate lowerings from the source representations
+like LLVM IR to the base arithmetic subset of the RISC-V ISA, as well as evaluate
+it's effectiveness and feasibility. This tool was to be developed on top of some
+already existing infrastructure in the xdsl-smt project.
 
-\section*{Success Criteria}
-\begin{enumerate}
-    \item Criteria 1
-    \item Criteria 2
-\end{enumerate}
+\section*{Work Completed}
+The backend synthesizer to the target subset was succesfully implemented. Semantics
+for the target subset were formally proven. The tool was tested against the arithmetic
+operations of the Arith dialect, which mimics the operations available to the LLVM
+intermediary representation. The project is integrated within the xdsl-smt repository
+and thus can easily be generalized to other backend synthesis tasks.
 
-\section*{Final Outcomes}
-Outcomes
+\section*{Special Difficulties}
+None.
