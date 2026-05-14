@@ -549,6 +549,11 @@ Moreover I had no prior knowledge of the xdsl-smt and mlir-fuzz projects before 
 \clearpage
 \chapter{Implementation}
 \label{ch:impl}
+
+\fehr{"systems" is a bit vague, maybe "components"?}
+\fehr{Should we say LLVM IR or Arith here?}
+\fehr{Instead of saying "This is covered in Section X", you can just have "(Section X)" at the end of the sentence. Similarly, do not write "(in section X)", but "(Section X)" instead.}
+\fehr{repetition of "made to" near the end of the paragraph}
 This project implements the systems necessary to perform lowering synthesis from the 
 LLVM IR dialect of MLIR to the RISC-V dialect present in xdsl-smt.
 %
@@ -572,6 +577,8 @@ as part of the lowering.
 \section{Base RISC-V to SMT Semantics}
 \label{RISC-V to SMT}
 
+\fehr{Last sentence is broken}
+\fehr{Instead of saying "we need to be able to lower the ...", you can say "we define a lowering for each type and operation"}
 In order to lower a program written in the RISC-V dialect to its SMT semantics, we need to
 be able to lower the types of all the primitive values (registers and immediates) together 
 with all of the instructions as a sequence of SMT instructions. Thus we need to model for
@@ -580,6 +587,7 @@ the RISC-V assmenbly.
 
 \subsection{Converting MLIR Types}
 
+\fehr{First sentence is too long, and a bit broken?}
 There are only a few types of values we will encounter in RISC-V code, given we are working 
 with values in CPU registers, and encoded within instructions they can all be represented as 
 bitvectors of appropriate sizes, however they will need to be extended to the same size for 
@@ -589,15 +597,20 @@ extended to 64 bits to operate together with the registers.
 
 \subsection{Handling different Instruction Types}
 
+\fehr{The second sentence is a bit unclear}
 RISC-V instructions can be divided into a few different types, based on their structure.
 Therefore we can extract the values, apply the appropriate conversion, then use the values
 for the SMT semantics.
 %
 In our implementation we handle the following instruction categories: 
 
+\fehr{In this section I feel like you should explain more what each instruction type is for each paragraph.}
+
+\fehr{You need to explain somewhere what a Register-Register operation is, it is unclear to the reader here.}
 \paragraph{Register-Register Operations} 
 We can directly get the values of the registers and convert them to 64 bit bitvectors.
 
+\fehr{Merge this as a single paragraph.}
 \paragraph{Register-Register Word Operation} 
 Since we are using RV64, we also have some operations that are meant to work on a 32-bit word.
 
@@ -612,6 +625,7 @@ Example:
 %res = smt.bv.sign_extend %tmp : (!smt.bv<12>) -> !smt.bv<64>
 \end{minted}
 
+\fehr{Explain what a Register-Immediate operation is}
 \paragraph{Register-Immediate Operation}
 We extract the immediate and extend it to a full sized bit vector, which can then operate 
 with the register.
@@ -623,6 +637,7 @@ Example:
 // Perform the operation on the operands
 \end{minted}
 
+\fehr{Explain what a Register-Immediate Word operation is, before explaining how you handle it}
 \paragraph{Register-Immediate Word Operation}
 We sign extend the immediate to 64 bits, than truncate the result, before sign extending it again.
 
@@ -635,6 +650,7 @@ Example:
 %res = smt.bv.sign_extend %tmp2 : (!smt.bv<32>) -> !smt.bv<64>
 \end{minted}
 
+\fehr{Explain what a Register-Register Shift (Word) Operation is. Not everyone is familiar with what "shamt" means.}
 \paragraph{Register-Register Shift (Word) Operation}
 We truncate the shift register (since only the lower bits matter), and then zero-extend it back 
 to perform the operation.
@@ -649,6 +665,7 @@ Example for 64 bits:
 
 For word operations we use 32 bit bitvectors, truncate rs1, and sign extend the result.
 
+\fehr{Explain what a Register-Shamt Shift (Word) Operation is}
 \paragraph{Register-Shamt Shift (Word) Operation} 
 Extend the shift value from 6 bits the 64 (32) bits.
 
@@ -659,11 +676,15 @@ Example for 64 bits:
 //Perform the operation
 \end{minted}
 
+\fehr{If you want, you can remove the (Word) versions of the paragraphs, and have one paragraph explaining
+that the "Word" versions just have their register being truncated.}
 Again, word operations will have additional truncation of \texttt{\%rs} followed by sign extension of \texttt{\%res}.
 
 
 \subsection{Exploiting identical semantics}
 
+\fehr{"Take for example" -> "For example,"}
+\fehr{Not sure what you mean by "we also see how many semantics would only differ by the smt operation they perform"}
 Across different instruction types we encounter instructions with the same underlying behaviour.
 Take for example \texttt{riscv.add} and \texttt{riscv.addi}. Their behaviour can be expressed as a single
 \texttt{smt.bv.add} opreration on the relevant values. So, as long as we are careful on how we extract
@@ -672,19 +693,23 @@ the values from each instruction we can exploit this similarity so have cleaner 
 Moreover, we also see how many semantics would only differ by the smt operation they perform.
 Thus we recognize the following categories:
 
+\fehr{At minimum, can you give the number of instructions per instruction type?}
+
 \stefan{Make a list of instructions, detailing some information about them (including their type), and 
 add it to an appendix, reference the appendix here}
 
-
+\fehr{Instead of "Trivial" operations, maybe "Directly Expressible" or something like that?}
 \paragraph{Trivial Operations}
 These operations can be expressed as a single smt operation.
 
+\fehr{Maybe remove the comments here, I'm not sure they add that much information?}
 \begin{minted}{mlir}
 // obtain op1 and op2 as SSA Values
 %res = smt.OPERATION %op1 %op2 : (!smt.bv<?>, !smt.bv<?>) -> !smt.bv<?>
 // convert res to !smt.bv<64>
 \end{minted}
 
+\fehr{These two sentences are a bit unclear}
 The way we obtain the operands and process the result is defined by the instruction type, and
 they type of \texttt{?} can be inferred from the types of the operands.
 
@@ -708,6 +733,9 @@ this:
 
 \paragraph{Other}
 
+\fehr{"however with careful implementation they plugged into the existing instruction types" I'm not sure what you mean by this.
+In general, I don't understand the point you want to make in this paragraph besides "we can implement each of these instructions
+differently". Maybe the lack of example where you reuse things is the problem}
 Some instructions have completely custom semantics, however with careful implementation
 they plugged into the existing instruction types. For example the the \texttt{slli.uw} instruction
 which has the following semantics, requiring a trunctation followed by a zero extension:
@@ -724,7 +752,10 @@ defining semantics for RISC-V in the smt dialect.
 
 \subsection{Leveraging xdsl-smt}
 
-We use tools provided by xdsl and xdsl smt to create mlir blocks like the examples I've shown
+\fehr{"like the examples I've shown above". Try to not reference examples from different subsections,
+as it can be confusing for the reader. Maybe here just showing a before / after example? Not sure if
+it is necessary though.}
+We use tools provided by xdsl and xdsl-smt to create mlir blocks like the examples I've shown
 above for every operation and SSA value. After that, I register my lowerings to xdsl-smt and
 a lowering pass is created that recursively lowers all of the instructions from a source program
 into a program using the smt dialect.
@@ -734,7 +765,7 @@ into a program using the smt dialect.
           Diagram showing the lowering process 
 \end{verbatim}
 
-
+\fehr{Broken grammar here.}
 The smt program is then converted into a SMTLib S-expression, which will can be used by SMT solvers
 in a variety of tools, in particular we care about validating the equivalence between different
 such expressions.
@@ -743,10 +774,14 @@ such expressions.
 
 \label{lean theorems}
 
+\fehr{Maybe reference the project where the lean definitions are.}
 In order to ensure the correctness of our semantics we programatically create lean4 theorems
 to formally prove the equivalence of our semantics to those we consider a source of truth, which
 are already written in lean.
 
+\fehr{"Obtain" -> "Generate"?}
+\fehr{"All that's left is" -> "Finally, we"}
+\fehr{Maybe reference the subsections here?}
 We first obtain Lean functions that are representative of our RISC-V semantics, and we use them
 as part of our equivalence theorems. First we encode our risc-v instructions into mlir blocks, 
 with the arguments being the registers and immediates used by the instruction. Using our lowering to the smt dialect previously defined,
@@ -791,6 +826,10 @@ Booleans behave in the same way.
 We also have a variety of operations, some of which are grouped together when lowering so we can leverage
 the similarity of their structure.
 
+\fehr{If you want to save space, I think that you can have only 1-2 examples rather than all the categories here.
+At least, I feel that this section is a bit repetitive overall, and do not add that much value?}
+
+\fehr{Instead of "The source operation", maybe "Constant operations:"?}
 \paragraph{Constant Operation}
 The source operation:
 \begin{minted}{MLIR}
@@ -801,7 +840,7 @@ is lowered to:
 let res : BitVec Y := X ;
 \end{minted}
 
-
+\fehr{Same here, maybe not saying "The source operation"?}
 \paragraph{Standard Binary Operation}
 The source operation:
 \begin{minted}{mlir}
@@ -830,6 +869,7 @@ let res : |\textcolor{cyan}{ResultType}| := |\textcolor{cyan}{OP arg0}| (BitVec.
 This pattern is used for operations \texttt{smt.bv.shl, smt.bv.lshr} and \texttt{smt.bv.ashr} which have
 bitvector equivalents \texttt{BitVec.shiftLeft, BitVec.ushiftRight} and \\ \texttt{BitVec.sshiftRight} respectively
 
+\fehr{Since you have only a single ternary operation, maybe you can just write `smt.ite` directly?}
 \paragraph{Ternary Operation}
 \begin{minted}{mlir}
 %res = "smt.OP"(%arg0, %arg1, %arg2) : (?, ?, ?) -> ResultType
@@ -887,6 +927,10 @@ theorem OP_eq (a0 : BitVec 64) (a1 : BitVec 64)
 Here, \texttt{\_OP} is the name of the function we automatically printed, and \texttt{RV64.OP} is
 the functions which we consider a source of truth.
 
+\fehr{Maybe a sentence here or two saying that all theorems are proven successfully, and that this
+gives us confidence in the correctness of our semantics? Similarly, saying that this is proven in like
+x seconds, just saying that this doesn't take too long.}
+
 \section{RISC-V Enumeration}
 
 \label{enumeration}
@@ -898,6 +942,8 @@ and extending the enumeration with `synthetic operations' which have `holes' for
 
 \subsection{RISC-V in IRDL}
 
+\fehr{I'm not sure you should mention the opaque type thing. Readers will not know what an opaque type is,
+and it doesn't add that much value to the reader.}
 The RISC-V dialect is a work in progress implementation as part of the xDSL project, therefore
 when working with mlir-fuzz, which is a project written in C++ working with MLIR, we used
 opaque types when refering to registers. This is achieved by adding a new configuration for 
@@ -914,6 +960,7 @@ irdl.operation @add {
 
 \subsection{Synthetic Operations}
 
+\fehr{"Take for example" -> "For example,"}
 Many RISC-V operations use attributes to encode constants. Take for example the average "riscv.addi"
 operation which contains a 12 bit immediate. When synthesizing a backend we want to be able to 
 use such immediates to our advantage, as that increases the amount of behaviours we can synthesize,
@@ -923,6 +970,7 @@ however enumerating a different program for all $2^12$ possible values of our co
 %res = riscv.addi %arg 42 : !riscv.reg -> riscv.reg
 \end{minted}
 %
+\fehr{Maybe explain it by : "We use an operand instead of a constant"? This looks hard to understand}
 Therefore during our synthesis process we want the ability to infer constants using the SMT solver's
 capability. To achieve this during enumeration we are going to replace operations that use attributes 
 with a `synthetic form'. These \texttt{synth.op}s contain the information to build an instance of 
@@ -953,6 +1001,7 @@ irdl.operation @addi attributes {synth} {
 }
 \end{minted}
 
+\fehr{Maybe explain here what declare const does?}
 Synthetic operation allow for the usage of arbitrary smt constants for the values that would
 normally be represented by the attributes. For example we have the following lowering from
 a synthetic add to the semantics, where we use a \texttt{smt.declare\_const} instead of the
@@ -969,7 +1018,7 @@ To:
 %imm_ext = smt.bv.signExtend %imm : !smt.bv<12> -> !smt.bv<64>
 %res = smt.bv.add %op %imm_ext : (!smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
 \end{minted}
-This leaves a hole, that the smt solver will be able to fill with an appropriate constant if one
+This leaves a hole that the smt solver will be able to fill with an appropriate constant if one
 exists that leads to a correct lowering.
 
 \section{Backend Synthesis}
@@ -1091,6 +1140,8 @@ value (using 32 bits here as an example):
 
 \subsection{Reconstruction}
 
+\fehr{You need to be more clear on what your contributions are here. Because the `synth.conversion` and
+`synth.from_value` already exist, so what did you had to change here?}
 \stefan{Present current world (technically preparation, but I think it would make more sense here), where
 we use synth constants for specific operation. Then proceed with the explanation of how reconstruction is done
 for synth ops. Provide a basic example.}
@@ -1118,6 +1169,7 @@ reconstruction, as can be seen here:
 //Lower the source_op, using the attributes above
 \end{minted}
 
+\fehr{This is a bit hard to understand, but with the tikz diagram it is much better!}
 When obtaining constant from the model they will be associated with the unique name we have given attribute
 then we can walk the program searching for all the \texttt{synth.from\_value} operations, which will give
 us the relevant \texttt{synth.conversion} operations, which contain the relevant metadata for the reconstruction. 
@@ -1128,6 +1180,7 @@ operation which the synthetic one is trying to emulate. \\
 
 \subsection{Conversion to PDL}
 
+\fehr{identify -> generate ?}
 At this point our tool can succesfully identify correct RISC-V lowerings for our target LLVM dialect
 subset. We then make use of PDL by converting the IR programs we have into PDL patterns. To achive 
 this we must first decompose the individual source and target programs into their components (attributes, 
@@ -1177,6 +1230,7 @@ Notice how (in the example below), except those on arguments and results, the \n
 when lowering entire programs. The remaining casts, will simply change the type of the function 
 that is lowered.
 
+\fehr{Can you reduce the font of these code snippets?}
 \begin{minted}{mlir}
 func.func @add_three(%a: i32, %b: i32, %c: i32) -> i32 {
   %tmp = "llvm.add"(%a, %b) : (i32, i32) -> i32
@@ -1202,6 +1256,7 @@ func.func @add_three(%a: i32, %b: i32, %c: i32) -> i32 {
 } 
 
 Which then translates to:
+
 func.func @add_three(%a: !riscv.reg, %b: !riscv.reg, %c: !riscv.reg) 
     -> !riscv.reg {
   //%a, %b, %c casts propagate to argument types
@@ -1256,9 +1311,11 @@ we converted from the lowerings we found as part of our enumerative synthesis.
 \clearpage
 \section{Repository Overview}
 
+\fehr{Add a repository link here?}
+\fehr{You use "I" in most places, but here switch to "The author"?}
 The project was built on top of the xdsl-smt and mlir-fuzz open source project. Thus,
 a comprehensive overview of the entire repository would span many pages and be partly 
-unnecesary to understand the project. Thus we provide an summary of the files that 
+unnecesary to understand the project. Thus we provide a summary of the files that 
 are relevant to the project along with a short description of each file's purpose and 
 content, along with any relevent contribution the author made. Note that, while some 
 files don't have any notable contribution, the author needed to gain a good 
@@ -1270,6 +1327,9 @@ included as a git submodule into the latter. The files that are relevant to this
 for the mlir-fuzz repository can be seen in Table \ref{tab:mlir_fuzz_overview}, while
 the overview of the xdsl-smt project is available in Table \ref{tab:xdsl_smt_overview}.
 
+\fehr{The content is nice, but the formatting of the table is not that great. I do not have
+a good idea on how to improve it though, maybe you can try to reduce the font size already?
+And break the line after the file name?}
 \begin{table}[htbp]
 \centering
 \footnotesize
@@ -1339,6 +1399,10 @@ each instruction & Fully implemented \\
 \clearpage
 \chapter{Evaluation}
 
+\fehr{"covers our analysis done to provide answers to the questions posed" -> "provides answers to the questions posed"}
+\fehr{"we analyze" -> "We evaluate"}
+\fehr{Again, here you can have reference with (Section X) instead of "in section X". This is the usual academic style
+I would say}
 This chapter covers our analysis done to provide answers to the questions posed in section \ref{evaluation-questions}.
 Thus in section \ref{eval-correctness} we analyze the method we used to prove the correctness of our
 semantics and ensure that our lowering matchies those semantics. Further in section \ref{eval-synthesis-duration}
