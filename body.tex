@@ -1416,14 +1416,20 @@ we provide a performance analysis against the Clang LLVM compiler's lowering fro
 \section{Correctness}
 \label{eval-correctness}
 
+\fehr{I am wondering how much this should stay in the evaluation chapter rather than the implementation
+one. I get what it is more of an evaluation (because you explain how correctness is "evaluated"), but you
+do not have a qualitative evaluation of this. Maybe you should add the number of translated instructions,
+and the time it takes to verify them?}
+
 \emph{Was correctness ensured, if so, how? Are there any limitations to this method? Can
 it be easily expanded upon for other IRs?}
 
 \subsection{Semantics correctness}
 
+\fehr{"we use was made" -> broken}
 As presented before, the semantics are validated using automatically generated Lean proofs.
 Therefore for all the arithmetic instructions considered in the base RISC-V instruction set
-a lean function was generated from it's lowering to the SMT dialect, which was then proven
+a lean function was generated from its lowering to the SMT dialect, which was then proven
 equivalent using automated tactics. In particular, we use was made of the unfold and 
 bv\_decide tactic, to create theorems like the ones below:
 
@@ -1448,8 +1454,9 @@ theorem andi_eq (a0 : BitVec 12) (a1 : BitVec 64) : RV64.andi a0 a1 = _andi a0 a
 \end{minted}
 The RV64 semantics are taken from the following repository \cite{riscv-lean}.
 
+\fehr{The author -> I?}
 The correctness proof tool was developed early in the development process. While the author
-claims that it has cought a variety of bugs that would have snuck through the manual 
+claims that it has caught a variety of bugs that would have snuck through the manual 
 implementation of the semantics. While this claim is difficult to prove, we still mention
 it as it was rather surprising to the author.
 
@@ -1508,6 +1515,8 @@ to programs of any size by induction.
 
 \subsection{Enumeration}
 
+\fehr{These first sentences are a bit confusing, can you write something like "We measure
+enumeration time, which we defined as enumerating all programs up to size X"?}
 In our implementation of the backend synthesis pipeline, for every instruction we need 
 to enumerate the program space. Since we use temporary files or pipes to communicate 
 between different processes, we consider the writing to these files to be part of the
@@ -1517,6 +1526,9 @@ write out to an output file, as well as the duration that this process took (whi
 using the unix \texttt{time} utility 3 times and taking the average). Further precision is unnecesary,
 as it becomes clear that only a fraction of the total time is spend enumerating.
 
+\fehr{Try to change the caption to the idea you want to convey. For instance "It is feasible to
+enumerate programs of up to size 3, and this enumeration is not the bottleneck." or something
+like that idea.}
 \begin{table}[htbp]
     \centering
     \caption{Enumeration counts and duration per instruction depth.}
@@ -1539,6 +1551,7 @@ arithmetic operations from within this dialect there was an attempt of synthesin
 using up to two arithmetic instructions from the RISC-V instruction set. This was repeated for  
 a few relevant argument types (i1, i8, i32, i64). 
 
+\fehr{Try to reference figures not in the sentence but with (Figure X) instead.}
 In figure \ref{fig:synthesis_per_instruction} we display a graph displaying the duration of completing synthesis for any 
 particular (operation, type, program size) triplet.
 %
@@ -1546,6 +1559,10 @@ Figure \ref{fig:duration_distribution} displays a histogram for the distribution
 we notice, successes are much faster tha failures, this is because a program can be found mid-way
 through searching. 
 
+\fehr{"A relevant graph" -> "We measure ...". This emphasizes that this evaluation is your contribution.}
+\fehr{"We excluded any operations where less than 15 programs were required to find a match". This seems a bit arbitrary?}
+\fehr{I think it would be interesting to compare between 64 bits and 32 bits, or even 8 bits. That way, we can see if there
+is a high correlation between bitwidth and synthesis time. Talking about it is not enough, we sholud have data about it.}
 Considering that total synthesis time can vary depending on when the answer is found, a relevant
 graph is figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
 for each different operation. We excluded any operations where less than 15 programs were required to find a match,
@@ -1587,6 +1604,8 @@ Excluding \texttt{ceildivsi}, \texttt{floordivsi} and \texttt{ceildivui} which a
 complex instruction that don't have an llvm counterpart, on average a lowering is checked
 in 100ms to 400ms, depnding on the instruction being lower. 
 
+\fehr{This is achievable in a few hours on multiple multi-threaded machine. Maybe mention
+before or here that your experiments are on single threads?}
 Given that there are up to $951786$ programs with up to three instruction we estimate it 
 would take between 26.5 to 106 hours to finish the synthesis of each instruction. 
 This can be heavily parallelized, so it is  quite achievable over a few days with access 
@@ -1596,6 +1615,7 @@ of a prototype like the current project. It is also clear 4 instructions becomes
 expensive.
 
 \section{Coverage}
+\fehr{Maybe for all research questions start them with "Research question 1: " or something like that?}
 \emph{Which instructions were able to be synthesized, which weren't? How much coverage of the target
 subset does this method achieve? Is there a justifications for the instructions where a lowering wasn't found?}
 \label{eval-coverage}
@@ -1656,6 +1676,7 @@ affects the final lowering, but this will be further explored in section \ref{ev
 
 \paragraph{Truncation refinement coverage advantage}
 
+\fehr{"garbage" -> "unused"?}
 The lowering obtained using truncation scheme gives additional leniancy to instructions
 that can overflow into the upper `garbage' bits of the register. In particular this reduces
 the required program size for basic arithmetic (\texttt{addi}, \texttt{subi}), as well as 
@@ -1666,6 +1687,11 @@ with comparisons on sub-registers, as comparing two 64-bit registers with `garba
 bits yields wrong results. Under the sign extension refinement scheme we are able to 
 fully synthesize such comparisons.
 
+\fehr{This is really interesting!}
+\fehr{I would not try to explain why this is slower without understanding the internals of Z3.
+Most likely there are optimizations whenever you want to prove sign extensions, so we actually
+don't know for sure why it is slower. So I wouldn't claim any understanding here! These things
+are really hard to understand.}
 \paragraph{Synthesis duration}
 When evaluating whether a program is a valid lowering for another the SMT solver can spend
 significantly more time when using the sign extension scheme. That is because the queries
@@ -1695,6 +1721,7 @@ some examples where there is a significant slowdown.
 \end{table}
 
 \section{Performance against LLVM}
+\fehr{stock -> industry standard compiler?}
 \emph{How does the lowering perform against a stock compiler?}
 \label{eval-performance}
 
@@ -1716,6 +1743,7 @@ it's goal, consisting of a working pipeline that can succesfully generating lowe
 source operations with well defined semantics to the arithmetic subset of the base RISC-V 
 instruction set.
 
+\fehr{Maybe use "paragraph" instead of "subsection" for 5.1.1 and 5.1.2?}
 \subsection{Development of tool to check RISC-V semantics in Lean}
 
 We build a tool to translate SMT semantics that were manually written for the RISC-V
@@ -1744,6 +1772,8 @@ performed to determine their advantages and disadvantages.
 
 \section{Future Work}
 
+\fehr{Do you have data to back this up? How long does it take to lower from arith to SMT,
+compared to the time taken in the SMT solver?}
 \paragraph{Creation of proper tool} 
 Using a language like C++ and specialising the code towards backend synthesis could lead
 to a significant speed up, as well as an increase in the usability of the tool.
