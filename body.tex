@@ -479,7 +479,7 @@ upon for other IRs?
 \item What would be appropriate refinements to RISC-V registers? Any advantages or disadvantages of each?
 \item Which instructions were able to be synthesized, which weren't? How much coverage of the target
 subset does this method achieve? Is there a justifications for the instructions where a lowering wasn't found?
-\item How does the lowering perform against a stock compiler?
+\item How does the lowering perform against an industry standard compiler?
 
 \end{itemize}
 
@@ -1141,7 +1141,7 @@ value (using 32 bits here as an example):
 \subsection{Reconstruction}
 
 \fehr{You need to be more clear on what your contributions are here. Because the `synth.conversion` and
-`synth.from_value` already exist, so what did you had to change here?}
+`synth.from\_value` already exist, so what did you had to change here?}
 \stefan{Present current world (technically preparation, but I think it would make more sense here), where
 we use synth constants for specific operation. Then proceed with the explanation of how reconstruction is done
 for synth ops. Provide a basic example.}
@@ -1559,21 +1559,6 @@ Figure \ref{fig:duration_distribution} displays a histogram for the distribution
 we notice, successes are much faster tha failures, this is because a program can be found mid-way
 through searching. 
 
-\fehr{"A relevant graph" -> "We measure ...". This emphasizes that this evaluation is your contribution.}
-\fehr{"We excluded any operations where less than 15 programs were required to find a match". This seems a bit arbitrary?}
-\fehr{I think it would be interesting to compare between 64 bits and 32 bits, or even 8 bits. That way, we can see if there
-is a high correlation between bitwidth and synthesis time. Talking about it is not enough, we sholud have data about it.}
-Considering that total synthesis time can vary depending on when the answer is found, a relevant
-graph is figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
-for each different operation. We excluded any operations where less than 15 programs were required to find a match,
-as it would not be representative of the overall average, as we always check the programs in the same order. For the
-sake of space we also only included 64-bit instructions, as 32, and 8 bit versions have similar durations.
-When looking at the data we notice the trend that more complicated operations (like divisions, remainders,
-and multiplications) take longer then simpler operations like shifts and basic comparisons. Programs of 
-size 1 also have a longer synthesis time due to not being able to properly amortize the overhead
-of running the entire pipeline because there are only small number of attempted programs.
-
-
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{synthesis_time_per_successful_instruction} 
@@ -1589,6 +1574,19 @@ of running the entire pipeline because there are only small number of attempted 
     \label{fig:duration_distribution}
 \end{figure}
 
+\fehr{"A relevant graph" -> "We measure ...". This emphasizes that this evaluation is your contribution.}
+\fehr{"We excluded any operations where less than 15 programs were required to find a match". This seems a bit arbitrary?}
+\fehr{I think it would be interesting to compare between 64 bits and 32 bits, or even 8 bits. That way, we can see if there
+is a high correlation between bitwidth and synthesis time. Talking about it is not enough, we sholud have data about it.}
+Considering that total synthesis time can vary depending on when the answer is found, a relevant
+graph is figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
+for each different operation. We excluded any operations where less than 15 programs were required to find a match,
+as it would not be representative of the overall average, as we always check the programs in the same order. For the
+sake of space we also only included 64-bit instructions, as 32, and 8 bit versions have similar durations.
+When looking at the data we notice the trend that more complicated operations (like divisions, remainders,
+and multiplications) take longer then simpler operations like shifts and basic comparisons. Programs of 
+size 1 also have a longer synthesis time due to not being able to properly amortize the overhead
+of running the entire pipeline because there are only small number of attempted programs.
 
 \begin{figure}[htbp]
     \centering
@@ -1721,12 +1719,57 @@ some examples where there is a significant slowdown.
 \end{table}
 
 \section{Performance against LLVM}
-\fehr{stock -> industry standard compiler?}
-\emph{How does the lowering perform against a stock compiler?}
+\emph{How does the lowering perform against an industry standard compiler?}
 \label{eval-performance}
 
-This section will be a summary of the methodology used to compare against the stock 
-clang compiler.
+\subsection{Methodology}
+
+To evaluate the performance of our lowering against that of target compiler we
+must perform a comparison test between the two. We identified two compilation
+pipelines that our input programs would be taken through, and measured the 
+amount of relevant instructions in the final product for each of the operations
+for which we synthesized a transformation.
+
+\paragraph{LLVM static compiler}
+The Arith function is trivially converted into an llvm function using the \texttt{mlir-opt}
+tool by running the \texttt{convert-arith-to-llvm} pass, it then gets translated from 
+the LLVM dialect into its IR form using \texttt{mlir-translate}, and finally compiled
+using \texttt{llc} to the base subset of RISC-V. We then count the assembly instructions
+excluding any \texttt{mv}, \texttt{ld}, and \texttt{sd}, as these are related to register
+allocation.
+
+\paragraph{Apply synthesized lowering} Construct a module consisting of all the
+PDL patterns synthesized from the source dialect. For every input program, use
+the \texttt{xdsl-opt} tool to perform an \texttt{apply-pdl} pass. Count the number
+of RISC-V operations in the final program, which will correspond to the number
+of assembly instructions we care about (those not related to register allocation).
+
+\subsection{Results}
+
+We performed the above A/B test on each instruction we have a lowering for. Our
+lowering had the same number of relevant instructions as the program compiled 
+using \texttt{llc}, with one notable exception. When compiling \texttt{arith.cmpi eq}
+the llc compiler uses 4 instructions while our lowering only uses two. This happens 
+because our lowering is able to make better use of the RV64 word instruction. The
+two final programs can be seen in the example below.
+\texttt{subw}.
+
+\begin{minted}{asm}
+//llc RISC-V:
+mv a3, a1 // Not counted
+mv a2, a0 // Not counted
+sext.w a1, a3
+sext.w a0, a2
+xor 0, a0, a1 
+seqz a0, a0
+\end{minted}
+
+\begin{minted}{mlir}
+//RISC-V dialect
+%0 = "riscv.subw"(%arg0, %arg1) : (!riscv.reg, !riscv.reg) -> !riscv.reg    
+%1 = "riscv.sltiu"(%0)  {immediate = 1 : si12} : (!riscv.reg) -> !riscv.reg
+\end{minted}
+
 
 
 \clearpage
