@@ -1327,6 +1327,7 @@ included as a git submodule into the latter. The files that are relevant to this
 for the mlir-fuzz repository can be seen in Table \ref{tab:mlir_fuzz_overview}, while
 the overview of the xdsl-smt project is available in Table \ref{tab:xdsl_smt_overview}.
 
+\stefan{add experiments directory}
 \fehr{The content is nice, but the formatting of the table is not that great. I do not have
 a good idea on how to improve it though, maybe you can try to reduce the font size already?
 And break the line after the file name?}
@@ -1575,14 +1576,13 @@ through searching.
 \end{figure}
 
 \fehr{"A relevant graph" -> "We measure ...". This emphasizes that this evaluation is your contribution.}
-\fehr{"We excluded any operations where less than 15 programs were required to find a match". This seems a bit arbitrary?}
 \fehr{I think it would be interesting to compare between 64 bits and 32 bits, or even 8 bits. That way, we can see if there
 is a high correlation between bitwidth and synthesis time. Talking about it is not enough, we sholud have data about it.}
 Considering that total synthesis time can vary depending on when the answer is found, a relevant
 graph is figure \ref{fig:synthesis_per_instruction_mean} where we can see the average time spend per program
 for each different operation. We excluded any operations where less than 15 programs were required to find a match,
-as it would not be representative of the overall average, as we always check the programs in the same order. For the
-sake of space we also only included 64-bit instructions, as 32, and 8 bit versions have similar durations.
+as it would not be representative of the overall average as static overhead would dominate be the dominant factor.
+For the sake of space we also only included 64-bit and 32-bit instructions.
 When looking at the data we notice the trend that more complicated operations (like divisions, remainders,
 and multiplications) take longer then simpler operations like shifts and basic comparisons. Programs of 
 size 1 also have a longer synthesis time due to not being able to properly amortize the overhead
@@ -1748,11 +1748,10 @@ of assembly instructions we care about (those not related to register allocation
 
 We performed the above A/B test on each instruction we have a lowering for. Our
 lowering had the same number of relevant instructions as the program compiled 
-using \texttt{llc}, with one notable exception. When compiling \texttt{arith.cmpi eq}
-the llc compiler uses 4 instructions while our lowering only uses two. This happens 
-because our lowering is able to make better use of the RV64 word instruction. The
-two final programs can be seen in the example below.
-\texttt{subw}.
+using \texttt{llc}, with one notable exception. When compiling \texttt{arith.cmpi eq} for 32
+bit integers the llc compiler uses 4 instructions while our lowering only uses two. This happens 
+because our lowering is able to make better use of the RV64 word instruction
+\texttt{subw}. The two final programs can be seen in the example below:
 
 \begin{minted}{asm}
 //llc RISC-V:
