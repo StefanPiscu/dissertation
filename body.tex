@@ -46,8 +46,8 @@ providing these semantics, developers obtain a verified implementation without
 additional manual effort. Moreover, the synthesized lowering utilizes the minimal 
 number of assembly instructions for each IR instruction to ensure high performance.
 %
-This project introduces backend synthesis tool from a dialect with defined semantics 
-to a subset RISC-V, evaluating its effectiveness, achieving high coverage of the source 
+This project introduces a backend synthesis tool from a dialect with defined semantics 
+to a subset of RISC-V, evaluating its effectiveness, achieving high coverage of the source 
 representation, and a performant backend, all while being proven correct.
 
 
@@ -97,7 +97,7 @@ attributes (static data), and results. Programs are a series of operations which
 multiple dialects; they also have types, which are verified to ensure the program is well formed. 
 %
 In order to make dataflow information explicit, which makes optimization much easier, MLIR enforces
-static single-assignment (SSA), that is each value is defined exactly once (as a result of an operation), 
+static single-assignment (SSA), that is, each value is defined exactly once (as a result of an operation), 
 and will never be reassigned.
 %
 In the example below we can see \textcolor{red}{result(s)}, 
@@ -114,7 +114,7 @@ as well as \textcolor{teal}{operation type}, and \textcolor{magenta}{result type
 
 Throughout the project we will be using the xDSL compiler framework \cite{xdsl} which is 
 interoperable with MLIR, but is written in Python to allow for rapid prototyping. The IR files for
-both xDSL and MLIR both use the same format, so existing tools built for MLIR can still be used.
+both xDSL and MLIR use the same format, so existing tools built for MLIR can still be used.
 Moreover, because of the aforementioned interoperability, if the prototype tool has successful
 results, a performant version can be implemented in C++ within the MLIR ecosystem.
 
@@ -123,11 +123,11 @@ results, a performant version can be implemented in C++ within the MLIR ecosyste
 LLVM is a set of of middle-level and low-level compiler components that leverage a 
 language-independent intermediate representation (LLVM IR). The IR serves as a portable 
 high-level assembly language that is a common target for optimizations. Many modern programming 
-languages (C++, Haskell, Rust, etc.) have frontends that target LLVM IR. We consider it serves 
-as a good general case IR which can be an apropriate source for backend synthesis. 
+languages (C++, Haskell, Rust, etc.) have frontends that target LLVM IR. We consider that it serves 
+as a good-general case IR which can be an appropriate source for backend synthesis. 
 
 In particular, we will be targeting a subset of the LLVM dialect, which mimics the
-LLVM IR while having access to the suite of tools provided by MLIR and xDSL. I'm focusing on
+LLVM IR while having access to the suite of tools provided by MLIR and xDSL. We are focusing on
 the arithmetic subset, as these instructions can be easily modeled with bitvector SMT semantics.
 Here is an example of a function that checks whether its arguments are equal:
 \begin{minted}{mlir}
@@ -139,8 +139,8 @@ func.func @main(%arg0 : i64, %arg1 : i64) -> i1 {
 
 \subsection*{Arith}
 
-Arith is a dialect available in MLIR, that also has plenty of support within xdsl-smt. The arithmetic 
-subset LLVM iR is fully contained within the arith dialect. Therefore to ease development
+Arith is a dialect available in MLIR that also has plenty of support within xdsl-smt. The arithmetic 
+subset of LLVM IR is fully contained within the arith dialect. Therefore, to ease development
 and evaluation using already existing tools for the arith dialect (like a complete implementation of 
 the semantics and IRDL code), we have used it interchangeably with the LLVM dialect. Note that any 
 program using arith can be trivially converted to an llvm program by simply changing the operation
@@ -148,7 +148,7 @@ names, for example from \texttt{arith.cmpi} to \texttt{llvm.icmp}.
 
 \subsection*{RISC-V}
 
-RISC-V is a simple open source instruction set architecture, with a variety of extensions.
+RISC-V is a simple open-source instruction set architecture with a variety of extensions.
 I've chosen it as my target for the project due to its simplicity and extensibility. 
 xDSL has an implementation of a dialect for the RISC-V ISA (\cite{riscv-dialect}) 
 which will be used in this project.
@@ -219,7 +219,7 @@ pdl.pattern : benefit(1) {
 
 \section{Semantics}
 
-Formal semantics for our dialects are the core component that make this entire project possible.
+Formal semantics for our dialects are the core component that makes this entire project possible.
 They allow us to understand the behaviour of each instruction and reason about it. This further
 enables the techniques used throughout this project. We also want the semantics
 to be easy to work with using automatic solvers. Therefore, we use SMT formulas and model
@@ -270,7 +270,7 @@ relation. A program is a \emph{refinement} of another if the following propositi
 \text{\emph{target inputs refine the source inputs}} \implies \text{\emph{target outputs refine the source outputs}}
 \end{equation*}
 
-Formally this is done by building an expression representative of the refinement relation above 
+Formally this is done by building an expression representative of the refinement relation above, 
 making use of the programs' semantics and a chosen refinement scheme for the source and target values,
 and then wrapping it in universal quantifiers. 
 We also need to refer to any existentially quantified values that are defined using 
@@ -328,7 +328,7 @@ llvm.func @f(%x: i32) -> i1 {
 \end{minted}
 
 Because of poison, this code can be optimized, as we can ignore the undefined behaviour that
-arises when $x = \texttt{INT\_MAX}$ by simply asserting that the poisoned value is can be 
+arises when $x = \texttt{INT\_MAX}$ by simply asserting that the poisoned value can be 
 compiled to \texttt{true}:
 \begin{minted}{mlir}
 llvm.func @f(%x: i32) -> i1 {
@@ -404,7 +404,7 @@ the SMT solver fills with values that can make the programs equivalent.
 In this work, we establish some semantics for RISC-V, so we can talk about the correctness
 of a lowering. We take as a source of truth semantics defined in the Sail language \cite{sail-paper}.
 Because we will be using these semantics to automatically generate proofs using traditional tools
-like SAT and SMT solvers, we need these to be bit-blastable, i.e., the bit-vector expression can be converted
+like SAT and SMT solvers, we need these to be bit-blastable, i.e., the bit-vector expressions can be converted
 into expressions about individual bits before being passed into these tools. In particular, we 
 use hand-written semantics in Lean that are proven equivalent to the source of truth. \cite{riscv-lean}
 %
@@ -412,7 +412,7 @@ Lean is a proof assistant which is used to obtain machine-verified theorems. In 
 a satisfactory level of correctness for our semantics, we require Lean theorems that prove the
 equivalences between our established RISC-V semantics and those we deem correct. 
 
-To achieve this, we built tools to convert between SMT dialect semantics and bitblastable Lean 
+To achieve this, we built tools to convert between SMT dialect semantics and bit-blastable Lean 
 functions which we then used to write the desired proofs. This gives us great confidence in the 
 correctness of our semantics, which we use as part of our lowering synthesis process.
 
@@ -425,7 +425,7 @@ implementation plan:
 
 \begin{itemize}
   
-\item Building a proper understanding of the MLIR and xDSL frameworks. 
+\item Build a proper understanding of the MLIR and xDSL frameworks. 
 Thus, some of my time will be spent researching how MLIR works and how to work within the 
 framework.
 
@@ -462,8 +462,8 @@ subset does this method achieve? Is there a justification for the instructions w
 Due to the novel nature of the project, development followed the spiral model, which focuses on 
 iteration and risk assessment.
 %
-Therefore, a working prototype was implemented with some limited scope. Upon completion, requirements
-were reevaluated and the scope was appropriately expanded, and the process was repeated. 
+Therefore, a working prototype was implemented with a limited scope. Upon completion, requirements
+were reevaluated, the scope was appropriately expanded, and the process was repeated. 
 The project went through the following major iteration cycles:
 \begin{enumerate}
 
@@ -479,21 +479,21 @@ The project went through the following major iteration cycles:
 
 \subsection{Languages and Tools}
 
-The project was written primarily in Python, within the VSCode editor with the pylance extension,
-which provides strict type checking using pyright, allowing for cleaner and safer code. 
+The project was written primarily in Python, within the VSCode editor with the Pylance extension,
+which provides strict type checking using Pyright, allowing for cleaner and safer code. 
 In addition, the project also used C++ for the work performed
-on mlir-fuzz, which was compiled using clang and ninja.
+on mlir-fuzz, which was compiled using Clang and Ninja.
 %
 Throughout the project I've extensively used the MLIR and xDSL frameworks, while working on the
 xdsl-smt project (containing the majority of the project's code) and mlir-fuzz (containing the 
 code for program enumeration and exhaustive search).
 %
-Due to the open source nature of the project, git and GitHub were used for source control.
+Due to the open-source nature of the project, Git and GitHub were used for source control.
 
 \subsection{Development Environment}
 
 As mentioned, Visual Studio Code was used as an IDE, using Windows Subsystem for Linux to have
-a unix environment. All development and evaluation took place on my personal laptop with the 
+a Unix environment. All development and evaluation took place on my personal laptop with the 
 following specifications:
 
 \begin{itemize}
@@ -507,15 +507,15 @@ following specifications:
 
 \subsection{Open Source Contributions}
 
-The project was built on top of the open source project xdsl-smt \cite{xdsl-smt}.
-The contributions made during development are planned to be divided into small easily 
+The project was built on top of the open-source project xdsl-smt \cite{xdsl-smt}.
+The contributions made during development are planned to be divided into small, easily 
 reviewable pull requests and upstreamed. As a result, there was additional attention 
 given to code clarity and conciseness. This also means that a good understanding of the xdsl-smt
-project was required to not reimplement features and be able to leverage already existing code 
+project was required to not reimplement features and to be able to leverage already existing code 
 effectively.
 
-This was different than working on a solo project, while also providing valuable experience
-for working in industry and other research projects. Focus on clear and clean code should make
+This was different from working on a solo project, while also providing valuable experience
+for working in industry and other research projects. A focus on clear and clean code should make
 it easier to maintain and build upon in the future.
 
 \section{Starting Point}
@@ -539,7 +539,7 @@ To ensure the correctness of our semantics we built a tool to generate Lean theo
 of equivalence between our selected source of truth and our implementation, which are then
 checked for correctness by the proof-assistant (Section \ref{lean theorems}).
 %
-We then present the modifications made to the enumerator that  allow us to exhaustively search 
+We then present the modifications made to the enumerator that allow us to exhaustively search 
 the RISC-V program space and handle the way attributes are used in the RISC-V dialect 
 (Section \ref{enumeration}).
 %
@@ -566,10 +566,10 @@ the RISC-V assembly.
 
 \subsection{Converting MLIR Types}
 
-There are only a few types of values (register, immediates and shift amounts) we will encounter 
+There are only a few types of values (registers, immediates and shift amounts) we will encounter 
 in RISC-V code which can all be represented as bitvectors of appropriate sizes. However, these 
 types need to be extended to the same size for our SMT operations. Register values will be 
-encoded as 64-bit bitvectors, and the 12-bit immediates and 6-bit shift ammount attributes 
+encoded as 64-bit bitvectors, and the 12-bit immediates and 6-bit shift amount attributes 
 are extended to 64 bits to be able to operate together with the registers.
 
 \subsection{Handling different Instruction Types}
@@ -577,7 +577,7 @@ are extended to 64 bits to be able to operate together with the registers.
 RISC-V instructions can be divided into a few different types, based on their structure.
 Therefore, for each type we can extract the values we need to use as operands, 
 apply the appropriate type conversions (i.e. from immediate to 64-bit bitvector), and then use 
-them  for the SMT semantics.
+them for the SMT semantics.
 %
 In our implementation, we handle the following instruction categories: 
 
@@ -585,8 +585,8 @@ In our implementation, we handle the following instruction categories:
 are represented as 64-bit registers. No sign/zero extension is needed and the values can directly
 be used as operands for the SMT semantics.
 
-\paragraph{Register-Immediate Operation} Instructions in this category have one of their operands
-passed as a 12-bit integer attribute. We must first sign extend the immediate to 64 bits so that
+\paragraph{Register-Immediate Operations} Instructions in this category have one of their operands
+passed as a 12-bit integer attribute. We must first sign-extend the immediate to 64 bits so that
 it can interoperate with the full-sized bit vector of the register. The semantics will look 
 something like the following example:
 
@@ -596,10 +596,10 @@ something like the following example:
 // Perform the operation on the operands
 \end{minted}
 
-\paragraph{Register-Register Shift Operation}  This category consists of shift operations. 
+\paragraph{Register-Register Shift Operations}  This category consists of shift operations. 
 Because 64-bit values can only be shifted up to 64 times, we only care about the lower 6 bits of the
 second operand for such instructions. We must truncate the second register to perform the 
-operation, then zero extend it back to 64-bits to allow for interoperability. We use zero extensions
+operation, then zero-extend it back to 64 bits to allow for interoperability. We use zero extensions
 as we never shift by negative amounts.
 
 Example for 64 bits:
@@ -610,10 +610,10 @@ Example for 64 bits:
 //Perform the operation, using op2 as the shift value
 \end{minted}
 
-\paragraph{Register-Shamt Shift Operation} 
+\paragraph{Register-Shamt Shift Operations} 
 For these instructions, one of the operands is a `shamt' (shift amount) which is represented 
-as a 6-bit integer attribute. Similar to Register-Register Shift Operations we must zero 
-extend the shift value to 64 bits.
+as a 6-bit integer attribute. Similar to Register-Register Shift Operations, we must zero-extend
+the shift value to 64 bits.
 
 Example for 64 bits: 
 \begin{minted}{mlir}
@@ -622,12 +622,11 @@ Example for 64 bits:
 //Perform the operation
 \end{minted}
 
-\paragraph{Word Operations} Because we are using RV64I with 64-bit registers there are word versions
+\paragraph{Word Operations} Because we are using RV64I with 64-bit registers, there are word versions
 for all the operation categories above. These work only on the first 32-bit word and have some slight
-changes from the 64-bit versions. Their results are truncated to 32 bits then sign extended back to 64. 
+changes from the 64-bit versions. Their results are truncated to 32 bits, then sign-encoded back to 64. 
 That is, we only care about the lower 32 bits of the result. Shift amounts only have 5 bits, and should
-be extended to 32 bits. And finally, argument registers are truncated down to 32-bits.
-
+be extended to 32 bits. And finally, argument registers are truncated down to 32 bits.
 
 \subsection{Exploiting identical semantics}
 
@@ -647,12 +646,10 @@ This is the common case and includes a wide range of operations.
 %res = smt.OPERATION %op1 %op2 : (!smt.bv<?>, !smt.bv<?>) -> !smt.bv<?>
 \end{minted}
 
-The operands are processed according to their instruction type as described in the previous subsection.
-After that they are used by the operation to obtain the result. It's is inferred from the operands. 
 The way we obtain the operands and process the result is defined by the instruction type, and
-the type of \texttt{?} can be inferred from the types of the operands. Operations that fall 
+the value of \texttt{?} can be inferred from the types of the operands. Operations that fall 
 into this category are: \texttt{add}, \texttt{sub}, \texttt{xor}, \texttt{or}, \texttt{sll}, 
-\texttt{srl}, \text{sra} and all their variants.
+\texttt{srl}, \texttt{sra} and all their variants.
 
 
 \paragraph{Comparisons}
@@ -675,9 +672,9 @@ Operations that fall into this category are: \texttt{slt}, \texttt{sltu}, \textt
 
 \paragraph{Other}
 
-Some instructions have completely custom semantics, however we can still make use of the infrastructure
+Some instructions have completely custom semantics; however, we can still make use of the infrastructure
 we implemented and only need to make some small custom functions for such operations. 
-For example the \texttt{slli.uw} instruction which has the following semantics, requiring a truncation 
+For example, the \texttt{slli.uw} instruction which has the following semantics, requiring a truncation 
 followed by a zero extension:
 
 \begin{minted}{mlir}
@@ -689,7 +686,6 @@ followed by a zero extension:
 By building abstractions for these instruction types and common behaviours, we can very easily
 implement the semantics for an instruction. This yields an easily extensible framework for 
 defining semantics for RISC-V in the smt dialect.
-
 \subsection{Leveraging xdsl-smt}
 
 We use tools provided by xdsl and xdsl-smt to create mlir blocks like the examples above for every 
@@ -835,7 +831,7 @@ appropriate Lean function.
 
 After successfully obtaining a lean function for the RISC-V instructions semantics we formulate 
 equivalence theorems like the following, using the bv\_decide tactic, which leverages the 
-bitblastable nature of the semantics and invokes a SAT solver to automatically generate a proof
+bit-blastable nature of the semantics and invokes a SAT solver to automatically generate a proof
 for the theorem, which gets checked by Lean.
 
 The theorems will take the same shape, first using the unfold tactic to replace the let bindings
@@ -876,7 +872,7 @@ irdl.operation @add {
 
 \subsection{Synthetic Operations}
 
-Many RISC-V operations use attributes to encode constants. For example, the average "riscv.addi"
+Many RISC-V operations use attributes to encode constants. Consider for example, an average \texttt{riscv.addi}
 operation which contains a 12-bit immediate. When synthesizing a backend we want to be able to 
 use such immediates to our advantage, as that increases the amount of behaviours we can synthesize,
 however enumerating a different program for all $2^{12}$ possible values of our constant would be too computationally intensive.
@@ -932,7 +928,7 @@ To:
 %imm_ext = smt.bv.signExtend %imm : !smt.bv<12> -> !smt.bv<64>
 %res = smt.bv.add %op %imm_ext : (!smt.bv<64>, !smt.bv<64>) -> !smt.bv<64>
 \end{minted}
-This leaves a hole that the smt solver will be able to fill with an appropriate constant if one
+This leaves a hole that the SMT solver will be able to fill with an appropriate constant if one
 exists that leads to a correct lowering.
 
 \section{Backend Synthesis}
@@ -1077,11 +1073,11 @@ Since we are using \texttt{synth.op} operations in our search to allow for the g
 we must then proceed to reconstruct the target program. We achieve this by extending the way xdsl-smt 
 handled arbitrary constants previously.
 
-We provide a brief overview of the synth dialect whihc was developed for this purpose. 
-It was composed of three  operations: \texttt{synth.const}, \texttt{synth.from\_value}, and \texttt{synth.conversion}.
+We provide a brief overview of the synth dialect which was developed for this purpose. 
+It was composed of three operations: \texttt{synth.const}, \texttt{synth.from\_value}, and \texttt{synth.conversion}.
 %
-This allowed for arbitrary constants but only for dialects where equivalent operations to \texttt{synth.const} 
-existed, like Arith and LLVM. The operation would be lowered to \texttt{smt.declare\_const}, 
+This allowed for arbitrary constants but only for dialects like Arith and LLVM, where equivalent operations to \texttt{synth.const} 
+existed. The operation would be lowered to \texttt{smt.declare\_const}, 
 together with a \texttt{synth.from\_value} and a \texttt{synth.conversion} 
 which stored metadata to allow for the reconstruction. We contribute to this dialect by extending 
 it with \texttt{synth.op} to allow for arbitrary attributes for any operation, not just constants, and
@@ -1397,7 +1393,7 @@ Other than the limitations mentioned above, this method can be easily extended t
 other dialects. However, as part of the implementation a wrapper needs to be created 
 to invoke the semantics class of the operation. For RISC-V (and ISAs in general) this is
 quite easy as instructions tend to take one of a few different shapes (as a design principle)
-so this similarity can be exploited to generate generic wrappers. In particular for the RISC-V
+so this similarity can be exploited to generate generic wrappers. In particular, for the RISC-V
 theorems we have a wrapper for operations that take two registers, and those that take an 
 attribute and an operand.
 
@@ -1448,7 +1444,7 @@ between different processes, we also need to consider the time spent writing to 
 To best simulate the actual process, we measure enumeration time by generating all programs up
 to some size and printing them to a file.
 %
-In Table~\ref{tab:enumeration_stats} we present the amount of programs we enumerate and subsequently
+In Table~\ref{tab:enumeration_stats} we present the number of programs we enumerate and subsequently
 write out to an output file, as well as the duration that this process took (which was measured
 using the Unix \texttt{time} utility 3 times and taking the average). Further precision is unnecessary,
 as it becomes clear that only a fraction of the total time is spent enumerating.
@@ -1471,7 +1467,7 @@ as it becomes clear that only a fraction of the total time is spent enumerating.
 \subsection{Synthesis}
 As mentioned in preparation, testing was done using the arith dialect, as there is a direct
 correspondence between its relevant instructions and those of the LLVM IR. Therefore, for 
-arithmetic operations from within this dialect there was an attempt of synthesizing a lowering
+arithmetic operations from within this dialect there was an attempt to synthesize a lowering
 using up to two arithmetic instructions from the RISC-V instruction set. This was repeated for  
 a few relevant argument types (i1, i8, i32, i64). 
 
@@ -1506,7 +1502,7 @@ When looking at the data we notice the trend that more complicated operations (l
 and multiplications) take longer than simpler operations like shifts and basic comparisons. Programs of 
 size 1 also have a longer synthesis time due to not being able to properly amortize the overhead
 of running the entire pipeline because there are only a small number of attempted programs.
-Another interesting fact, is that the i32 version of an instruction sometimes performs better 
+Another interesting fact is that the i32 version of an instruction sometimes performs better 
 (like for \texttt{arith.minsi}), and sometimes worse (like for \texttt{arith.cmpi eq}). This is a result
 of the unpredictable nature of the Z3 solver, and the fact that the upper bits are left unconstrained for 
 32-bit operations.
@@ -1530,7 +1526,7 @@ Given that there are up to $951786$ programs with up to three instructions, we e
 would take between 26.5 to 106 hours to finish the synthesis of each instruction on a single thread. 
 This can be heavily parallelized, so it is quite achievable over a few days with access 
 to a high-performance compute cluster or even a very powerful computer. We thus conclude 
-that synthesising all 3-instruction lowerings is possible, although outside the scope 
+that synthesizing all 3-instruction lowerings is possible, although outside the scope 
 of a proof-of-concept like the current project. It is also clear that 4 instructions becomes 
 prohibitively expensive.
 
@@ -1718,7 +1714,7 @@ and limitations in the context of generating a lowering from a mature IR like LL
 to a simple ISA like RISC-V.
 
 \paragraph{Explored refinement options}
-During development the idea of refining integers of various bitwidths into architectural
+During development, the idea of refining integers of various bitwidths into architectural
 registers was explored and two feasible lowering schemes were identified. Analysis was
 performed to determine their advantages and disadvantages.
 
@@ -1726,14 +1722,14 @@ performed to determine their advantages and disadvantages.
 \section{Future Work}
 
 \paragraph{Expanding the tool with extensions and additional ISAs} 
-Currently the tool is capable of synthesis to base RISC-V arithmetic instructions. However,
+Currently, the tool is capable of synthesis to base RISC-V arithmetic instructions. However,
 the infrastructure is in place to easily add extensions to the semantics and the backend 
 generation pipeline. Other ISAs could also be included.
 This would lead to an increase in the time it takes to synthesize an instruction, so pruning
 techniques and other optimization techniques should be explored in parallel.
 
 \paragraph{Attempting to generalize lowerings to other bit vector sizes}
-A technique that could yield a speed-up to the time it takes to synthesize a backend would
+A technique that could yield a speedup to the time it takes to synthesize a backend would
 be trying to generalize transformations found for a smaller data-type (like i32) to a larger
 one (i64). This could skip a large amount of work from being performed.
 
@@ -1754,10 +1750,10 @@ without sacrificing correctness or optimality.
 \section{Reflections}
 
 When choosing and starting the project, I didn't have much experience in Python, 
-MLIR, formal verification, or working on an open source project. This was
-vastly different than working on a small scale personal project with minimal tools.
+MLIR, formal verification, or working on an open-source project. This was
+vastly different from working on a small-scale personal project with minimal tools.
 I had to familiarize myself with a variety of technologies, while also writing code
-on top of a large codebase. I'd estimate that for every line of code I've written
+on top of a large codebase. I'd estimate that for every line of code I've written,
 I've read and comprehended an average of 15 lines, while also reading plenty of 
 documentation and leveraging my supervisors' expertise in the project for help.
 
