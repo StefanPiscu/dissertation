@@ -2,7 +2,6 @@
 .venv
 build/*
 **.minted
-*.pdf
 *.bbl
 *.blg
 *.fdb_latexmk
